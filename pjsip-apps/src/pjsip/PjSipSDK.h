@@ -59,6 +59,7 @@ private:
 	std::string m_domain;
 	std::string m_voipid;
 	std::string m_voippwd;
+    pj::TransportId transport_tcp = PJSUA_INVALID_ID;
 	pjsua_call_id m_callid = PJSUA_INVALID_ID;
 	bool m_Registerd = false;
 

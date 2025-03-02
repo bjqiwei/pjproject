@@ -97,15 +97,15 @@ public:
 				pj::AudioMedia& mic_med = pj::Endpoint::instance().audDevManager().getCaptureDevMedia();
 				mic_med.startTransmit(*aud_med);
 
-				if (m_micro.getPortId() == PJSUA_INVALID_ID) {
+				//if (m_micro.getPortId() == PJSUA_INVALID_ID) {
 					//m_micro.createRecorder(utf8AppDataDir + "\\micro.wav");
-					mic_med.startTransmit(m_micro);
-				}
+				//	mic_med.startTransmit(m_micro);
+				//}
 
-				if (m_speaker.getPortId() == PJSUA_INVALID_ID){
+				//if (m_speaker.getPortId() == PJSUA_INVALID_ID){
 					//m_speaker.createRecorder(utf8AppDataDir + "\\speaker.wav");
-					aud_med->startTransmit(m_speaker);
-				}
+				//	aud_med->startTransmit(m_speaker);
+				//}
 			}
 		}
 	}
@@ -323,8 +323,6 @@ CPjSipSDK::CPjSipSDK()
 	//if (!pj::Endpoint::instance().libIsThreadRegistered())
 	//	pj::Endpoint::instance().libRegisterThread("CPjSipSDK");
 
-	m_acc = new CAccount(this);
-
 	LOG4CPLUS_TRACE(log, "construction");
 }
 
@@ -456,23 +454,42 @@ int CPjSipSDK::Login(std::string server, LONG port, std::string domain, std::str
 
     pj::TransportConfig tcfg;
     //tcfg.port = 5060;
-	acc_cfg.sipConfig.transportId = ep->transportCreate(PJSIP_TRANSPORT_UDP, tcfg);
+
+    try{
+        if(this->transport_tcp == PJSUA_INVALID_ID){
+            this->transport_tcp = ep->transportCreate(PJSIP_TRANSPORT_UDP, tcfg);
+        }
+        acc_cfg.sipConfig.transportId = transport_tcp;
+    }
+    catch (pj::Error& err) {
+        LOG4CPLUS_ERROR(log, "Account creation error: " << err.info());
+    }
 
 	//"Digest  realm=\"realm\",domain=\"sip:domain\",nonce=\"nonce\",opaque=\"opaque\",stale=true,algorithm=MD5,qop=\"auth\"",
 
-	try {
-		if (m_acc->isValid()) {
-			pjsua_acc_set_user_data(m_acc->getId(), nullptr);
-			pjsua_acc_del(m_acc->getId());
-		}
+    if (!m_acc) {
+        // Create the account
+        m_acc = new CAccount(this);
+        try {
+            m_acc->create(acc_cfg);
+        }
+        catch (pj::Error& err) {
+            LOG4CPLUS_ERROR(log, "Account creation error: " << err.info());
+        }
+    }
+    else {
+        // Modify the account
+        try {
+            //Update the registration
+            m_acc->modify(acc_cfg);
+            m_acc->setRegistration(true);
+        }
+        catch (pj::Error& err) {
+            LOG4CPLUS_ERROR(log, "Account creation error: " << err.info());
+        }
+    }
 
-		this->m_acc->create(acc_cfg);
-		//this->setRegistration(true);
-		this->log = log4cplus::Logger::getInstance("CPjSipSDK." + std::to_string(this->m_acc->getId()));
-	}
-	catch (pj::Error& err) {
-		LOG4CPLUS_ERROR(log, this->getHost() + " " << "Account creation error: " << err.info());
-	}
+	this->log = log4cplus::Logger::getInstance("CPjSipSDK." + std::to_string(this->m_acc->getId()));
 
 	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__ " result:");
 	return 0;
