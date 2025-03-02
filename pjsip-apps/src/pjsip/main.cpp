@@ -2,23 +2,25 @@
 #include <log4cplus/configurator.h>
 #include <log4cplus/log4cplus.h>
 #include "tinyxml2.h"
+#include <signal.h>
+#include <thread>
 
-int main(int argc, char* argv[])
+std::string sip_server;
+int sip_port = 5060;
+std::string sip_domain;
+std::string sip_userId;
+std::string sip_password;
+static bool running;
+
+void loadconfig(const char* config_xml)
 {
-    log4cplus::initialize();
-    log4cplus::ConfigureAndWatchThread logconfig("log4cplus.properties", 10 * 1000);
-    log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
-    std::string sip_server;
-    int sip_port = 5060;
-    std::string sip_domain;
-    std::string sip_userId;
-    std::string sip_password;
     using namespace tinyxml2;
     tinyxml2::XMLDocument config;
+    log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
     if (config.LoadFile("pjsip.xml") != XMLError::XML_SUCCESS)
     {
         LOG4CPLUS_ERROR(log, "load config file error:" << config.ErrorName() << ":" << config.GetErrorStr1());
-        return -1;
+        return;
     }
 
     if (tinyxml2::XMLElement* eConfig = config.FirstChildElement("Config")) {
@@ -52,13 +54,82 @@ int main(int argc, char* argv[])
         }
     }
 
+}
+
+static void sigterm_handler(int signo)
+{
+    running = FALSE;
+}
+
+static bool cmdline_process(char* cmdline)
+{
+    bool running = TRUE;
+    char* name;
+    char* last;
+    name = strtok(cmdline, " ");
+
+
+    if (strcasecmp(name, "exit") == 0 || strcmp(name, "quit") == 0) {
+        running = FALSE;
+    }
+
+    else if (strcasecmp(name, "help") == 0) {
+        printf("usage:\n");
+        printf("- ... quit\n");
+        printf("- quit, exit\n");
+    }
+    else {
+        printf("unknown command: %s (input help for usage)\n", name);
+    }
+    return running;
+}
+
+
+int main(int argc, char* argv[])
+{
+    log4cplus::initialize();
+    log4cplus::ConfigureAndWatchThread logconfig("log4cplus.properties", 10 * 1000);
+    log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
+    loadconfig("pjsip.xml");
+    
+
     {
+        running = TRUE;
+        signal(SIGINT, sigterm_handler);
+#ifdef SIGTSTP
+        signal(SIGTSTP, sigterm_handler);
+#endif
+#ifdef SIGQUIT
+        signal(SIGQUIT, sigterm_handler);
+#endif
+#ifdef SIGTERM
+        signal(SIGTERM, sigterm_handler);
+#endif
 
         pj_log_set_level(1);
         CPjSipSDK sipsdk;
-        sipsdk.Login(sip_server, sip_port, sip_domain, sip_userId, sip_password);
 
-        std::getchar();
+        pj_log_set_decor(PJ_LOG_HAS_SENDER | PJ_LOG_HAS_INDENT);
+        sipsdk.Login(sip_server, sip_port, sip_domain, sip_userId, sip_password);
+        char cmdline[1024];
+        do {
+            printf(">");
+#ifndef  WIN32
+            malloc_trim(0);
+#endif // ! WIN32
+            memset(&cmdline, 0, sizeof(cmdline));
+            for (size_t i = 0; i < sizeof(cmdline); i++) {
+                cmdline[i] = (char)getchar();
+                if (cmdline[i] == '\n') {
+                    cmdline[i] = '\0';
+                    break;
+                }
+            }
+            if (*cmdline) {
+                running = cmdline_process(cmdline);
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+        } while (running);
 
     }
     log4cplus::deinitialize();

@@ -211,7 +211,7 @@ void CPjSipSDK::onRegistered(pj::OnRegStateParam& prm)
 
 void CPjSipSDK::onRegisterError(int reason, const char* desc)
 {
-    LOG4CPLUS_INFO(log, desc << " " << "onRegisterError ");
+    LOG4CPLUS_INFO(log, reason << " " << desc << " " << "onRegisterError ");
 }
 
 void CPjSipSDK::onIncomingCallReceived(int callType, const char* callid, const char* caller)
