@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <string>
 #include <log4cplus/logger.h>
 #include <pjsua2.hpp>
@@ -10,9 +10,9 @@ class CAccount :public pj::Account {
 public:
 	CAccount(class CPjSipSDK* plugin);
 	~CAccount();
-	virtual void onRegStarted(pj::OnRegStartedParam & prm) override;// ×¢²á»ò×¢ÏúµÇ¼ÇÊ±Í¨ÖªÉêÇë
-	virtual void onRegState(pj::OnRegStateParam &prm) override;//µÇÂ¼×´Ì¬¸Ä±ä»Øµ÷
-	virtual void onCallState(const pj::CallInfo & ci);//Í¨»°×´Ì¬¸Ä±ä»Øµ÷
+	virtual void onRegStarted(pj::OnRegStartedParam & prm) override;// æ³¨å†Œæˆ–æ³¨é”€ç™»è®°æ—¶é€šçŸ¥ç”³è¯·
+	virtual void onRegState(pj::OnRegStateParam &prm) override;//ç™»å½•çŠ¶æ€æ”¹å˜å›è°ƒ
+	virtual void onCallState(const pj::CallInfo & ci);//é€šè¯çŠ¶æ€æ”¹å˜å›è°ƒ
 	virtual void onDtmfDigit(pjsua_call_id call_id, const std::string & dtmf);
 	virtual void onIncomingCall(pj::OnIncomingCallParam &prm) override;
 
@@ -29,46 +29,28 @@ private:
 class CPjSipSDK
 {
 public:
-	virtual void onRegStarted(pj::OnRegStartedParam & prm);// ×¢²á»ò×¢ÏúµÇ¼ÇÊ±Í¨ÖªÉêÇë
-	virtual void onRegState(pj::OnRegStateParam &prm);//µÇÂ¼×´Ì¬¸Ä±ä»Øµ÷
-	virtual void onCallState(const pj::CallInfo & ci);//Í¨»°×´Ì¬¸Ä±ä»Øµ÷
+	virtual void onRegStarted(pj::OnRegStartedParam & prm);// æ³¨å†Œæˆ–æ³¨é”€ç™»è®°æ—¶é€šçŸ¥ç”³è¯·
+	virtual void onRegState(pj::OnRegStateParam &prm);//ç™»å½•çŠ¶æ€æ”¹å˜å›è°ƒ
+	virtual void onCallState(const pj::CallInfo & ci);//é€šè¯çŠ¶æ€æ”¹å˜å›è°ƒ
 	virtual void onDtmfDigit(pjsua_call_id call_id, const std::string & dtmf);
 	virtual void onIncomingCall(pj::Call *call);
 
-private:// Ğéº¯Êı   
-	virtual void onGetCapabilityToken() = 0;			//ÓÉAPPÌá¹©µÄ»ñÈ¡ÄÜÁ¦tokenµÄ»Øµ÷·½·¨
-	virtual void onConnected() = 0;					//ÓëÔÆÍ¨Ñ¶Æ½Ì¨Á¬½Ó³É¹¦
-	virtual void onConnectError(int reason, const char * desc) = 0;		//ÓëÔÆÍ¨Ñ¶Æ½Ì¨Á¬½Ó¶Ï¿ª»òÕß³ö´í
-	virtual void onIncomingCallReceived(int callType, const char *callid, const char *caller) = 0;  //ÓĞºô½ĞºôÈë
-	virtual void onCallProceeding(const char*callied) = 0;		//ºô½ĞÒÑ¾­±»ÔÆÍ¨Ñ¶Æ½Ì¨´¦Àí
-	virtual void onCallAlerting(const char *callid) = 0;			//ºô½ĞÕñÁå
-	virtual void onCallAnswered(const char *callid) = 0;			//Íâºô¶Ô·½Ó¦´ğ
-	virtual void onMakeCallFailed(const char *callid, int reason) = 0;//ÍâºôÊ§°Ü
-	virtual void onCallPaused(const char* callid) = 0;				//±¾µØPauseºô½Ğ³É¹¦
-	virtual void onCallPausedByRemote(const char *callid) = 0;		//ºô½Ğ±»±»½Ğpasue
-	virtual void onCallReleased(const char *callid, int reason) = 0;				//ºô½Ğ¹Ò»ú
-	virtual void onCallTransfered(const char *callid, const char *destionation) = 0; //ºô½Ğ±»×ª½Ó
-	virtual void onDtmfReceived(const char *callid, char dtmf) = 0;		//ÊÕµ½DTMF°´¼üÊ±µÄ»Øµ÷
-	virtual void onTextMessageReceived(const char *sender, const char *receiver, const char *sendtime, const char *msgid, const char *message, const char *userdata) = 0;		//ÊÕµ½ÎÄ±¾¶ÌÏûÏ¢
-																																												//void (*onGroupTextMessageReceived)(const char* sender, const char* groupid, const char *message) =0; //ÊÕµ½Èº×éÎÄ±¾¶ÌÏûÏ¢
-	virtual void onMessageSendReport(const char*msgid, const char*time, int status) = 0; //·¢ËÍÏûÏ¢½á¹û
-	virtual void onLogInfo(const char* loginfo) = 0; // ÓÃÓÚ½ÓÊÕµ×²ãµÄlogĞÅÏ¢,µ÷ÊÔ³öÏÖµÄÎÊÌâ.
-	virtual void onResumed(const char* callid) = 0;
-	virtual void onNotifyGeneralEvent(const char*callid, int eventType, const char*userdata, int intdata) = 0;	//Í¨ÓÃÊÂ¼şÍ¨Öª
-	virtual void onCallMediaUpdateRequest(const char*callid, int request) = 0; // ÊÕµ½¶Ô·½ÇëÇóµÄ¸üĞÂÃ½Ìå request£º0  ÇëÇóÔö¼ÓÊÓÆµ£¨ĞèÒªÏìÓ¦£© 1:ÇëÇóÉ¾³ıÊÓÆµ£¨²»ĞèÒªÏìÓ¦£©
-	virtual void onCallMediaUpdateResponse(const char*callid, int response) = 0;  // ±¾µØÇëÇó¸üĞÂÃ½Ìåºó£¬¸üĞÂºóµÄÃ½Ìå×´Ì¬ 0 ÓĞÊÓÆµ 1 ÎŞÊÓÆµ
-	virtual void onDeliverVideoFrame(const char*callid, unsigned char*buf, int size, int width, int height) = 0; //ÊÓÆµÍ¨»°¹ı³ÌÖĞ£¬Èç¹ûÇëÇó±¾µØÊÓÆµ£¬ÊÓÆµÊı¾İÍ¨¹ıÕâ¸öº¯ÊıÉÏ±¨¡£ÊÓÆµ¸ñÊ½ÊÇRGB24
-	virtual void onRecordVoiceStatus(const char *callid, const char *fileName, int status) = 0; //Í¨»°Â¼Òô½áÊø»òÕß³öÏÖ´íÎó£¬ÉÏ±¨ÊÂ¼ş¡£filenNameÊÇÉÏ²ã´«ÏÂµÄÎÄ¼şÃû¡£ statusÊÇÂ¼Òô×´Ì¬£º0£º ³É¹¦  -1£ºÊ§°Ü£¬Â¼ÒôÎÄ¼şÉ¾³ı  -2£ºĞ´ÎÄ¼şÊ§°Ü£¬±£ÁôÒÑ¾­±£´æµÄÂ¼Òô¡£
-	virtual void onAudioData(const char *callid, const void *inData, int inLen, void *outData, int &outLen, bool send) = 0; //ÔÚÒôÆµÊı¾İ·¢ËÍÖ®Ç°£¬½«ÒôÆµÊı¾İ·µ»Ø¸øÉÏ²ã´¦Àí£¬È»ºó½«ÉÏ²ã´¦ÀíºóµÄÊı¾İ·µ»ØÀ´¡£
-	virtual void onOriginalAudioData(const char *callid, const void *inData, int inLen, int sampleRate, int numChannels, const char *codec, bool send) = 0; //½«Ô­Ê¼ÒôÆµÊı¾İÅ×µ½ÉÏ²ã¡£
-	virtual void onMessageRemoteVideoRotate(const char *degree) = 0;//µ±Ô¶¶ËÊÓÆµ·¢ÉúĞı×ªÊ±£¬½«Ğı×ªµÄ½Ç¶ÈÉÏ±¨£¬degreeÎªÏò×óĞı×ªµÄ¶ÈÊı£¨0£¬90£¬180£¬270£©¡£
-	virtual void onRequestSpecifiedVideoFailed(const char *callid, const char *sip, int reason) = 0;//ÊÓÆµ»áÒéÊ±£¬ÇëÇóÊÓÆµÊı¾İÊ§°Ü
-	virtual void onStopSpecifiedVideoResponse(const char *callid, const char *sip, int response, void *window) = 0;//ÊÓÆµ»áÒéÊ±£¬È¡ÏûÊÓÆµÊı¾İÏìÓ¦
-	virtual void onEnableSrtp(const char *sip, bool isCaller) = 0;//ÉèÖÃsrtp¼ÓÃÜÊôĞÔ
-	virtual void onRemoteVideoRatioChanged(const char *callid, int width, int height, bool isVideoConference, const char *sipNo) = 0;//Ô¶¶ËÊÓÆµÃ½Ìå·Ö±æÂÊ±ä»¯Ê±ÉÏ±¨
-	virtual void onLogOut() = 0;
-	virtual void oneXosipThreadStop() = 0;
-	virtual std::string getHost() const = 0;
+private:// è™šå‡½æ•°   
+	virtual void onRegistered(pj::OnRegStateParam& prm);					//ä¸äº‘é€šè®¯å¹³å°è¿æ¥æˆåŠŸ
+	virtual void onRegisterError(int reason, const char * desc);		//ä¸äº‘é€šè®¯å¹³å°è¿æ¥æ–­å¼€æˆ–è€…å‡ºé”™
+	virtual void onIncomingCallReceived(int callType, const char *callid, const char *caller);  //æœ‰å‘¼å«å‘¼å…¥
+	virtual void onCallProceeding(const char*callied);		//å‘¼å«å·²ç»è¢«äº‘é€šè®¯å¹³å°å¤„ç†
+	virtual void onCallAlerting(const char *callid);			//å‘¼å«æŒ¯é“ƒ
+	virtual void onCallAnswered(const char *callid);			//å¤–å‘¼å¯¹æ–¹åº”ç­”
+	virtual void onMakeCallFailed(const char *callid, int reason);//å¤–å‘¼å¤±è´¥
+	virtual void onCallPaused(const char* callid);				//æœ¬åœ°Pauseå‘¼å«æˆåŠŸ
+	virtual void onCallReleased(const char *callid, int reason);				//å‘¼å«æŒ‚æœº
+	virtual void onCallTransfered(const char *callid, const char *destionation); //å‘¼å«è¢«è½¬æ¥
+	virtual void onDtmfReceived(const char *callid, char dtmf);		//æ”¶åˆ°DTMFæŒ‰é”®æ—¶çš„å›è°ƒ
+																																												//void (*onGroupTextMessageReceived)(const char* sender, const char* groupid, const char *message) =0; //æ”¶åˆ°ç¾¤ç»„æ–‡æœ¬çŸ­æ¶ˆæ¯
+	virtual void onResumed(const char* callid);
+	virtual void onLogOut();
+    virtual std::string getHost() const;
 
 protected:
 	log4cplus::Logger log;
@@ -98,7 +80,7 @@ public:
 	void setRingFile(const std::string & ringfile);
 	void startRinging();
 	void stopRinging();
-	int connectToCCP(std::string server, LONG port, std::string domain, std::string utf8voipId, std::string utf8voipPwd);
+	int Login(std::string server, LONG port, std::string domain, std::string utf8voipId, std::string utf8voipPwd);
 	std::string makeCall(std::string strCalled);
 	int acceptCall(int callid);
 	int rejectCall(int callid, int reason);
@@ -108,7 +90,7 @@ public:
 	int sendDTMF(int callid, const char dtmf);
 	int releaseCall(int callid);
 	const int getCurrentCall() const;
-	int disConnectToCCP();
+	int Logout();
 	int setCodecEnabled(int codecid, int enabled);
 	int getCodecEnabled(int codecid);
 	int setMute(bool on);

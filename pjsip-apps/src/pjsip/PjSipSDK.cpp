@@ -1,4 +1,4 @@
-#include "PjSipSDK.h"
+Ôªø#include "PjSipSDK.h"
 #include <log4cplus/logger.h>
 #include <log4cplus/fileappender.h>
 #include <log4cplus/loggingmacros.h>
@@ -130,7 +130,7 @@ private:
 void CPjSipSDK::onRegStarted(pj::OnRegStartedParam & prm)
 {
 	if (prm.renew){
-		//this->onConnected();
+		//this->onRegistered(prm);
 	}
 	else{ 
 		this->onLogOut();
@@ -141,13 +141,13 @@ void CPjSipSDK::onRegState(pj::OnRegStateParam &prm)
 {
 	if (prm.code == 200) {
 		if (!this->m_Registerd) {
-			this->onConnected();
+			this->onRegistered(prm);
 			this->m_Registerd = true;
 		}
 	}
 	else {
 		this->m_Registerd = false;
-		this->onConnectError(prm.code, prm.reason.c_str());
+		this->onRegisterError(prm.code, prm.reason.c_str());
 	}
 }
 
@@ -204,6 +204,77 @@ void CPjSipSDK::onIncomingCall(pj::Call * call)
 	this->onIncomingCallReceived(0, std::to_string(call->getInfo().id).c_str(), caller.c_str());
 }
 
+void CPjSipSDK::onRegistered(pj::OnRegStateParam& prm)
+{
+    LOG4CPLUS_INFO(log, prm.rdata.srcAddress << " " << "onRegistered ");
+}
+
+void CPjSipSDK::onRegisterError(int reason, const char* desc)
+{
+    LOG4CPLUS_INFO(log, desc << " " << "onRegisterError ");
+}
+
+void CPjSipSDK::onIncomingCallReceived(int callType, const char* callid, const char* caller)
+{
+    LOG4CPLUS_INFO(log, callType << " " << callid << " " << caller);
+}
+
+void CPjSipSDK::onCallProceeding(const char* callied)
+{
+    LOG4CPLUS_INFO(log, "onCallProceeding " << callied);
+}
+
+void CPjSipSDK::onCallAlerting(const char* callid)
+{
+    LOG4CPLUS_INFO(log, "onCallAlerting " << callid);
+}
+
+void CPjSipSDK::onCallAnswered(const char* callid)
+{
+    LOG4CPLUS_INFO(log, "onCallAnswered " << callid);
+}
+
+void CPjSipSDK::onMakeCallFailed(const char* callid, int reason)
+{
+    LOG4CPLUS_INFO(log, "onMakeCallFailed " << callid << " " << reason);
+}
+
+void CPjSipSDK::onCallPaused(const char* callid)
+{
+    LOG4CPLUS_INFO(log, "onCallPaused " << callid);
+}
+
+
+void CPjSipSDK::onCallReleased(const char* callid, int reason)
+{
+    LOG4CPLUS_INFO(log, "onCallReleased " << callid);
+}
+
+void CPjSipSDK::onCallTransfered(const char* callid, const char* destionation)
+{
+    LOG4CPLUS_INFO(log, "onCallTransfered " << callid << " " << destionation);
+}
+
+void CPjSipSDK::onDtmfReceived(const char* callid, char dtmf)
+{
+    LOG4CPLUS_INFO(log, "onDtmfReceived " << callid << " " << dtmf);
+}
+
+void CPjSipSDK::onResumed(const char* callid)
+{
+    LOG4CPLUS_INFO(log, "onResumed " << callid);
+}
+
+void CPjSipSDK::onLogOut()
+{
+    LOG4CPLUS_INFO(log, "onLogOut ");
+}
+
+std::string CPjSipSDK::getHost() const
+{
+    return std::string();
+}
+
 class CPLogWriter :public pj::LogWriter {
 private:
 	log4cplus::Logger log;
@@ -249,8 +320,8 @@ CPjSipSDK::CPjSipSDK()
 
 	initialize();
 	
-	if (!pj::Endpoint::instance().libIsThreadRegistered())
-		pj::Endpoint::instance().libRegisterThread("CPjSipSDK");
+	//if (!pj::Endpoint::instance().libIsThreadRegistered())
+	//	pj::Endpoint::instance().libRegisterThread("CPjSipSDK");
 
 	m_acc = new CAccount(this);
 
@@ -260,6 +331,7 @@ CPjSipSDK::CPjSipSDK()
 CPjSipSDK::~CPjSipSDK()
 {
 	//pjsua_acc_set_user_data(m_acc->getId(), NULL);
+    m_acc->shutdown();
 	delete m_acc;
 	if (m_player)
 		delete m_player;
@@ -353,7 +425,7 @@ void CPjSipSDK::stopRinging()
 	}
 }
 
-int CPjSipSDK::connectToCCP(std::string server, LONG port, std::string domain, std::string utf8voipId, std::string utf8voipPwd)
+int CPjSipSDK::Login(std::string server, LONG port, std::string domain, std::string utf8voipId, std::string utf8voipPwd)
 {
 	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__ " server:" << server << ":"  << port << ", domin:" << domain << ",voipId:" << utf8voipId << ", pwd:" << utf8voipPwd);
 
@@ -369,21 +441,21 @@ int CPjSipSDK::connectToCCP(std::string server, LONG port, std::string domain, s
 	this->m_voipid = utf8voipId;
 	this->m_voippwd = utf8voipPwd;
 
-	//ÃÌº”’À∫≈...
+	//Ê∑ªÂä†Ë¥¶Âè∑...
 
 	pj::AccountConfig acc_cfg;
 	if (m_domain != m_server) {
-		acc_cfg.sipConfig.proxies.push_back("sip:" + m_server + ";transport=tcp");
+		acc_cfg.sipConfig.proxies.push_back("sip:" + m_server + "");
 	}
 
 
-	acc_cfg.idUri = "<sip:" + this->m_voipid + "@" + this->m_domain + ";transport=tcp>";
-	acc_cfg.regConfig.registrarUri = "sip:" + this->m_domain + ";transport=tcp";
+	acc_cfg.idUri = "<sip:" + this->m_voipid + "@" + this->m_domain + ">";
+	acc_cfg.regConfig.registrarUri = "sip:" + this->m_domain + "";
 	acc_cfg.sipConfig.authCreds.push_back(pj::AuthCredInfo("Digest", "*", this->m_voipid, 0, this->m_voippwd));
 	//acc_cfg.sipConfig.authCreds.push_back(pj::AuthCredInfo("Digest", "realm=\"realm\",domain=\"sip:domain\",nonce=\"nonce\",opaque=\"opaque\",stale=true,algorithm=MD5,qop=\"auth\"", this->m_voipid, 0, this->m_voippwd));
 
     pj::TransportConfig tcfg;
-    tcfg.port = 5060;
+    //tcfg.port = 5060;
 	acc_cfg.sipConfig.transportId = ep->transportCreate(PJSIP_TRANSPORT_UDP, tcfg);
 
 	//"Digest  realm=\"realm\",domain=\"sip:domain\",nonce=\"nonce\",opaque=\"opaque\",stale=true,algorithm=MD5,qop=\"auth\"",
@@ -617,7 +689,7 @@ const int CPjSipSDK::getCurrentCall() const
 	return m_callid;
 }
 
-int CPjSipSDK::disConnectToCCP()
+int CPjSipSDK::Logout()
 {
 	pj_status_t status = PJ_SUCCESS;
 	try
@@ -638,8 +710,7 @@ int CPjSipSDK::disConnectToCCP()
 int CPjSipSDK::unInitialize()
 {
 	if (g_pjsipReferce.fetch_sub(1) == 1) {
-		ep->hangupAllCalls();
-		ep->libDestroy(pjsua_destroy_flag::PJSUA_DESTROY_NO_RX_MSG);
+		ep->libDestroy();
 		//LOG4CPLUS_DEBUG(log, __FUNCTION__ );
 		delete ep;
 		ep = nullptr;
