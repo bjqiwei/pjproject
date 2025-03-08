@@ -111,6 +111,12 @@ PJ_BEGIN_DECL
 #   define PJMEDIA_AUDIO_DEV_HAS_NULL_AUDIO     0
 #endif
 
+ /**
+  * This setting controls whether sim audio support should be included.
+  */
+#ifndef PJMEDIA_AUDIO_DEV_HAS_SIM_AUDIO
+#   define PJMEDIA_AUDIO_DEV_HAS_SIM_AUDIO     0
+#endif
 
 /**
  * This setting controls whether coreaudio support should be included.

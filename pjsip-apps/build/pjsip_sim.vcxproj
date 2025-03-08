@@ -105,6 +105,7 @@
     <RootNamespace>pjsip</RootNamespace>
     <!-- Specific UWP property -->
     <DefaultLanguage>en-US</DefaultLanguage>
+    <ProjectName>pjsip_sim</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-Static|Win32'" Label="Configuration">

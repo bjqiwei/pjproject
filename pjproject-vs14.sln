@@ -120,7 +120,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "swig_csharp_pjsua2", "pjsip
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimplePjsua2CS", "pjsip-apps\src\swig\csharp\sample\SimplePjsua2CS\SimplePjsua2CS.csproj", "{3DCDD02D-C3CF-40EB-A66C-F7C2DAD93FD9}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pjsip", "pjsip-apps\build\pjsip.vcxproj", "{6ADADE12-6E7A-41A8-9944-A654C4F1BC21}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pjsip", "pjsip-apps\build\pjsip_sim.vcxproj", "{6ADADE12-6E7A-41A8-9944-A654C4F1BC21}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "log4cplusS", "third_party\log4cplus-2.1.1\msvc14\log4cplusS.vcxproj", "{BEC0CD2F-60CD-40E2-A89B-AB10E902F1D5}"
 EndProject

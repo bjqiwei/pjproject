@@ -44,6 +44,9 @@
     <ClCompile Include="..\src\pjmedia-audiodev\wmme_dev.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\pjmedia-audiodev\sim_dev.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\pjmedia-audiodev\audiodev.h">
