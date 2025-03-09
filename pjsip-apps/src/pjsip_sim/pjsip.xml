@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <Config>
-	<Server>192.168.1.104</Server>
+	<Server>192.168.1.106</Server>
 	<Port>5060</Port>
-	<Domain>192.168.1.104</Domain>
+	<Domain>192.168.1.106</Domain>
 	<UserID>1000</UserID>
 	<Password>2345</Password>
 </Config>

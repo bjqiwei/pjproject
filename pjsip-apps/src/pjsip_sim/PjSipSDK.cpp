@@ -9,6 +9,26 @@
 static std::atomic_ulong g_pjsipReferce = 0;
 class pj::Endpoint * ep;
 
+class MyAudioMediaPort :public pj::AudioMediaPort {
+public:
+    MyAudioMediaPort() {
+        this->log = log4cplus::Logger::getInstance("pjsip");
+    }
+    virtual void onFrameRequested(pj::MediaFrame& frame)
+    {
+        //PJ_UNUSED_ARG(frame);
+        LOG4CPLUS_DEBUG(log, "onFrameRequested " << frame.size);
+    }
+
+    virtual void onFrameReceived(pj::MediaFrame& frame)
+    {
+        //PJ_UNUSED_ARG(frame);
+        LOG4CPLUS_DEBUG(log, "onFrameReceived " << frame.size);
+    }
+private:
+    log4cplus::Logger log;
+};
+
 class CPEndpoint : public pj::Endpoint {
 public:
 	CPEndpoint(){
@@ -56,6 +76,10 @@ public:
 
 			//pj::Endpoint::instance().audDevManager().getCaptureDevMedia().adjustTxLevel();
 			//pj::Endpoint::instance().audDevManager().getPlaybackDevMedia().adjustRxLevel();
+            pj::MediaFormatAudio fmt;
+            fmt.init(PJMEDIA_FORMAT_PCMA,8000,1, 20*1000, 8,64*1024,96*1024);
+
+            m_audioMediaPort.createPort("test", fmt);
 		}
 		catch (pj::Error& err)
 		{
@@ -92,10 +116,10 @@ public:
 		for (auto & media : this->getInfo().media){
 			if (media.type == PJMEDIA_TYPE_AUDIO) {
 				pj::AudioMedia *aud_med = (pj::AudioMedia *) this->getMedia(media.index);
-				pj::AudioMedia& speaker_med = pj::Endpoint::instance().audDevManager().getPlaybackDevMedia();
-				aud_med->startTransmit(speaker_med);
-				pj::AudioMedia& mic_med = pj::Endpoint::instance().audDevManager().getCaptureDevMedia();
-				mic_med.startTransmit(*aud_med);
+				//pj::AudioMedia& speaker_med = pj::Endpoint::instance().audDevManager().getPlaybackDevMedia();
+				aud_med->startTransmit(m_audioMediaPort);
+				//pj::AudioMedia& mic_med = pj::Endpoint::instance().audDevManager().getCaptureDevMedia();
+                m_audioMediaPort.startTransmit(*aud_med);
 
 				//if (m_micro.getPortId() == PJSUA_INVALID_ID) {
 					//m_micro.createRecorder(utf8AppDataDir + "\\micro.wav");
@@ -123,6 +147,7 @@ private:
 	CAccount * m_acc = nullptr;
 	pj::AudioMediaRecorder m_micro;
 	pj::AudioMediaRecorder m_speaker;
+    MyAudioMediaPort m_audioMediaPort;
 	log4cplus::Logger log;
 };
 

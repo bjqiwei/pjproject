@@ -434,8 +434,8 @@
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y ..\src\pjsip\log4cplus.properties $(OutDir)
-xcopy /Y ..\src\pjsip\pjsip.xml $(OutDir)</Command>
+      <Command>xcopy /Y ..\src\pjsip_sim\log4cplus.properties $(OutDir)
+xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
@@ -498,8 +498,8 @@ xcopy /Y ..\src\pjsip\pjsip.xml $(OutDir)</Command>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y ..\src\pjsip\log4cplus.properties $(OutDir)
-xcopy /Y ..\src\pjsip\pjsip.xml $(OutDir)</Command>
+      <Command>xcopy /Y ..\src\pjsip_sim\log4cplus.properties $(OutDir)
+xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
@@ -562,8 +562,8 @@ xcopy /Y ..\src\pjsip\pjsip.xml $(OutDir)</Command>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y ..\src\pjsip\log4cplus.properties $(OutDir)
-xcopy /Y ..\src\pjsip\pjsip.xml $(OutDir)</Command>
+      <Command>xcopy /Y ..\src\pjsip_sim\log4cplus.properties $(OutDir)
+xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Static|ARM64'">
@@ -624,8 +624,8 @@ xcopy /Y ..\src\pjsip\pjsip.xml $(OutDir)</Command>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y ..\src\pjsip\log4cplus.properties $(OutDir)
-xcopy /Y ..\src\pjsip\pjsip.xml $(OutDir)</Command>
+      <Command>xcopy /Y ..\src\pjsip_sim\log4cplus.properties $(OutDir)
+xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release-Dynamic|ARM64'">
@@ -686,8 +686,8 @@ xcopy /Y ..\src\pjsip\pjsip.xml $(OutDir)</Command>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y ..\src\pjsip\log4cplus.properties $(OutDir)
-xcopy /Y ..\src\pjsip\pjsip.xml $(OutDir)</Command>
+      <Command>xcopy /Y ..\src\pjsip_sim\log4cplus.properties $(OutDir)
+xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Dynamic|ARM64'">
@@ -748,8 +748,8 @@ xcopy /Y ..\src\pjsip\pjsip.xml $(OutDir)</Command>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y ..\src\pjsip\log4cplus.properties $(OutDir)
-xcopy /Y ..\src\pjsip\pjsip.xml $(OutDir)</Command>
+      <Command>xcopy /Y ..\src\pjsip_sim\log4cplus.properties $(OutDir)
+xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release-Static|ARM64'">
@@ -778,13 +778,14 @@ xcopy /Y ..\src\pjsip\pjsip.xml $(OutDir)</Command>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\pjsip\PjSipSDK.h" />
-    <ClInclude Include="..\src\pjsip\tinyxml2.h" />
+    <ClInclude Include="..\src\pjsip_sim\cpptimer.h" />
+    <ClInclude Include="..\src\pjsip_sim\PjSipSDK.h" />
+    <ClInclude Include="..\src\pjsip_sim\tinyxml2.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\pjsip\main.cpp" />
-    <ClCompile Include="..\src\pjsip\PjSipSDK.cpp" />
-    <ClCompile Include="..\src\pjsip\tinyxml2.cpp" />
+    <ClCompile Include="..\src\pjsip_sim\main.cpp" />
+    <ClCompile Include="..\src\pjsip_sim\PjSipSDK.cpp" />
+    <ClCompile Include="..\src\pjsip_sim\tinyxml2.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

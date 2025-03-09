@@ -15,21 +15,24 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\pjsip\PjSipSDK.h">
+    <ClInclude Include="..\src\pjsip_sim\cpptimer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\pjsip\tinyxml2.h">
+    <ClInclude Include="..\src\pjsip_sim\PjSipSDK.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\pjsip_sim\tinyxml2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\pjsip\PjSipSDK.cpp">
+    <ClCompile Include="..\src\pjsip_sim\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\pjsip\main.cpp">
+    <ClCompile Include="..\src\pjsip_sim\PjSipSDK.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\pjsip\tinyxml2.cpp">
+    <ClCompile Include="..\src\pjsip_sim\tinyxml2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
