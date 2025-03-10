@@ -19,6 +19,16 @@
 #include <pj/assert.h>
 #include <pj/log.h>
 #include <pj/os.h>
+#include <stdbool.h>
+/*sim  Include files*/
+#include "audio_if_types.h"
+#include "audio_if_ubus.h"
+#include "audio_if_parameter.h"
+#include "audio_if.h"
+#include "audio_if_api.h"
+#include "audio_if_audio_hw_mrvl.h"
+#include "audio_hw_mrvl.h"
+
 
 #if PJMEDIA_AUDIO_DEV_HAS_SIM_AUDIO
 
@@ -42,6 +52,13 @@ struct sim_audio_factory
     struct sim_audio_dev_info  *dev_info;
 };
 
+/* Individual sim capture/playback stream descriptor */
+struct sim_channel
+{
+    pj_timestamp  timestamp;
+};
+
+
 /* Sound stream. */
 struct sim_audio_stream
 {
@@ -52,6 +69,14 @@ struct sim_audio_stream
     pjmedia_aud_rec_cb   rec_cb;            /**< Capture callback.     */
     pjmedia_aud_play_cb  play_cb;           /**< Playback callback.    */
     void                *user_data;         /**< Application data.     */
+
+    struct sim_channel  play_strm;         /**< Playback stream.      */
+    struct sim_channel  rec_strm;          /**< Capture stream.       */
+
+    void*               buffer;            /**< Temp. frame buffer.   */
+    unsigned            bytes_per_frame;   /**< Bytes per frame       */
+
+    pj_thread_t* thread;            /**< Thread handle.        */
 };
 
 
@@ -255,6 +280,263 @@ static pj_status_t sim_factory_default_param(pjmedia_aud_dev_factory *f,
     return PJ_SUCCESS;
 }
 
+/* Internal: create sim player device. */
+static pj_status_t init_player_stream(struct sim_audio_stream* parent, struct sim_channel* sim_strm)
+{
+    parent->bytes_per_frame = pcm_playback_size;
+    sim_strm->timestamp.u64 = 0;
+    return PJ_SUCCESS;
+}
+
+/* Internal: create sim recorder device */
+static pj_status_t init_capture_stream(struct sim_audio_stream* parent, struct sim_channel* sim_strm)
+{
+    parent->bytes_per_frame = pcm_record_size;
+    sim_strm->timestamp.u64 = 0;
+    return PJ_SUCCESS;
+}
+
+/*******************************************************************************\
+ *	Function:	sim_dev_thread
+ *   Description:This function will main thread to record the PCM stream from
+ *               ASR1826 and playback the PCM stream to ASR1826.
+ *
+ *   NOTE:
+ sample rate is 8000
+ channel number is 1
+ bit of sample is 16
+ Due to modem limited, only support 8k/16k sample rate
+ *	Returns:	void
+ \*******************************************************************************/
+static audio_hw_device_t* play_ring_tone_ahw_dev_ubus;
+
+static struct audio_stream_in* stream_in = NULL;
+static struct audio_stream_out* stream_out = NULL;
+static bool go_on_pcmloopback = true;
+static bool stream_started = false;
+static unsigned int pcm_record_size = 0;       //320:NB, 640:WB
+static unsigned int pcm_playback_size = 0;     //320:NB, 640:WB
+
+static int config_parameters(int in_out)
+{
+    unsigned int direction = 0xFF, type, srcdst, priority, dest;
+    char kvpair[128];
+    struct str_parms* param = NULL;
+    int data[5];
+    const char* key = NULL;
+    bool update_vcm = false;
+
+    direction = in_out;/* 0-play, 1-record */
+    type = 0; /* 0:PCM_NB_BUF_SIZE, 1:PCM_WB_BUF_SIZE */
+    srcdst = 2;/* 0-None, 1-Near end, 2-Far end, 3-Both ends */
+    priority = 1;/* 0-Do not combine(override), 1-Combine */
+    dest = 0;/* 0-Near codec, 1-Near Vocoder */
+
+    if (direction == 0) {//output
+        if (type == 0)
+            pcm_playback_size = PCM_NB_BUF_SIZE;
+        else
+            pcm_playback_size = PCM_WB_BUF_SIZE;
+
+        PJ_LOG(4, (THIS_FILE, "config playback parameters."));
+    }
+    else if (direction == 1) {//input
+        if (type == 0)
+            pcm_record_size = PCM_NB_BUF_SIZE;
+        else
+            pcm_record_size = PCM_WB_BUF_SIZE;
+
+        PJ_LOG(4, (THIS_FILE, "config record parameters."));
+    }
+
+    memset(kvpair, 0x00, sizeof(kvpair));
+    sprintf(kvpair, "%s=%d;%s=%d;%s=%d;%s=%d;%s=%d", VCM_CONFIG_DIRECTION, direction,
+        VCM_CONFIG_TYPE, type, VCM_CONFIG_SRC_DST, srcdst,
+        VCM_CONFIG_PRIORITY, priority, VCM_CONFIG_DEST, dest);
+
+    PJ_LOG(4, (THIS_FILE, "%s: config information kvpair is %s.", __FUNCTION__, kvpair));
+
+    //extract the parameter and config from string
+    param = str_parms_create_str(kvpair);
+    if (!param) {
+        PJ_LOG(3, (THIS_FILE, "%s: param create str is null!", __FUNCTION__));
+        return -1;
+    }
+
+    //set vcm configurations
+    key = VCM_CONFIG_DIRECTION;
+    if (str_parms_get_int(param, key, &data[0]) == 0) {
+        update_vcm = true;
+        str_parms_del(param, key);
+    }
+    key = VCM_CONFIG_TYPE;
+    if (str_parms_get_int(param, key, &data[1]) == 0) {
+        update_vcm = true;
+        str_parms_del(param, key);
+    }
+    key = VCM_CONFIG_SRC_DST;
+    if (str_parms_get_int(param, key, &data[2]) == 0) {
+        update_vcm = true;
+        str_parms_del(param, key);
+    }
+    key = VCM_CONFIG_PRIORITY;
+    if (str_parms_get_int(param, key, &data[3]) == 0) {
+        update_vcm = true;
+        str_parms_del(param, key);
+    }
+    key = VCM_CONFIG_DEST;
+    if (str_parms_get_int(param, key, &data[4]) == 0) {
+        update_vcm = true;
+        str_parms_del(param, key);
+    }
+
+    //printf("Direction is %d, Type is %d, Src_Dst is %d, Priority is %d, Dest is %d. \n",data[0], data[1], data[2], data[3], data[4]);
+
+    if (update_vcm) {
+        configure_vcm(data);   /*TODO check if all inputs got all values successfully*/
+    }
+
+    return 0;
+}
+
+static void sim_dev_thread(void* arg)
+{
+    struct sim_audio_stream* strm = (struct sim_audio_stream*)arg;
+    int rc, len, cap_len;
+    char buffer[PCM_WB_BUF_SIZE];
+    unsigned int frames = 0;
+    pj_status_t status = PJ_SUCCESS;
+
+    PJ_LOG(4, (THIS_FILE, "enter play_ring_tone_thread."));
+
+    //Must set vcm_configure before pcmloopback
+    if ((pcm_record_size != PCM_NB_BUF_SIZE) && (pcm_record_size != PCM_WB_BUF_SIZE)) {
+        PJ_LOG(3, (THIS_FILE, "%s: Please use vcm_configure to set pcm_record_size!!", __FUNCTION__));
+        return;
+    }
+
+    //Must set vcm_configure before playback
+    if ((pcm_playback_size != PCM_NB_BUF_SIZE) && (pcm_playback_size != PCM_WB_BUF_SIZE)) {
+        PJ_LOG(3, (THIS_FILE, "%s: Please use vcm_configure to set pcm_playback_size!!", __FUNCTION__));
+        return;
+    }
+
+    //Must set vcm_configure before playback
+    if (pcm_record_size != pcm_playback_size) {
+        PJ_LOG(3, (THIS_FILE, "%s: Please configure pcm_record_size = pcm_playback_size!!", __FUNCTION__));
+        return;
+    }
+
+    //open the audiostub_ctl, prepare for record and playback
+    VCMInit();
+
+    //open record stream 
+    rc = play_ring_tone_ahw_dev_ubus->open_input_stream(play_ring_tone_ahw_dev_ubus, 0,
+        play_ring_tone_ahw_dev_ubus->get_supported_devices(play_ring_tone_ahw_dev_ubus),
+        NULL, &stream_in, 0, 0, AUDIO_SOURCE_VOICE_CALL);
+    if (rc < 0) {
+        PJ_LOG(3, (THIS_FILE, "%s: error opening input device. rc = %d!", __FUNCTION__, rc));
+        goto bad_stream;
+    }
+
+    //open playback stream
+    rc = play_ring_tone_ahw_dev_ubus->open_output_stream(play_ring_tone_ahw_dev_ubus, 0,
+        play_ring_tone_ahw_dev_ubus->get_supported_devices(play_ring_tone_ahw_dev_ubus),
+        AUDIO_OUTPUT_FLAG_DIRECT, NULL, &stream_out, 0);
+    if (rc < 0) {
+        PJ_LOG(3, (THIS_FILE, "%s: error opening output device. rc = %d!", __FUNCTION__, rc));
+        goto bad_stream;
+    }
+
+    PJ_LOG(3, (THIS_FILE, "%s: starting pcmloopback %d bytes every 20ms!", __FUNCTION__, pcm_record_size));
+    go_on_pcmloopback = true;
+    while (go_on_pcmloopback) {
+        //record the needed format stream from the device.
+        //only read pcm stream, no send command.
+        if (!stream_started)
+        {
+            //sleep 20 millisecond
+            pj_thread_sleep(20);
+            continue;
+        }
+        {
+            cap_len = stream_in->read(stream_in, buffer, pcm_record_size);
+            if (len < 0) {
+                PJ_LOG(3, (THIS_FILE, "%s: error reading!", __FUNCTION__));
+                goto end_pcmloopback;
+            }
+            pjmedia_frame pcm_frame, * frame;
+
+            /* PCM mode */
+
+            /* Copy the audio data out of the wave buffer. */
+            pj_memcpy(strm->buffer, buffer, pcm_record_size);
+
+            /* Prepare frame */
+            frame = &pcm_frame;
+            frame->type = PJMEDIA_FRAME_TYPE_AUDIO;
+            frame->buf = strm->buffer;
+            frame->size = pcm_record_size;
+            frame->timestamp.u64 = strm->rec_strm.timestamp.u64;
+            frame->bit_info = 0;
+
+            status = (*strm->rec_cb)(strm->user_data, frame);
+            strm->rec_strm.timestamp.u64 += strm->param.samples_per_frame /
+                strm->param.channel_count;
+
+            PJ_LOG(4, (THIS_FILE, "%s: record from Dev size is %d!", __FUNCTION__, len));
+        }
+
+
+        //
+        //TODO:send the above IP package to far-end
+        //
+
+        //playback the needed format stream to device.
+        //only write pcm stream, no send command.
+
+        {
+            pjmedia_frame pcm_frame, * frame;
+            frame = &pcm_frame;
+
+            frame->type = PJMEDIA_FRAME_TYPE_AUDIO;
+            frame->size = strm->bytes_per_frame;
+            frame->buf = buffer;
+            frame->timestamp.u64 = strm->play_strm.timestamp.u64;
+            frame->bit_info = 0;
+            status = (*strm->play_cb)(strm->user_data, frame);
+
+            rc = stream_out->write(stream_out, buffer, len);
+            strm->play_strm.timestamp.u64 += strm->param.samples_per_frame /
+                strm->param.channel_count;
+
+            if (rc < 0) {
+                PJ_LOG(3, (THIS_FILE, "%s: error writing (child)!", __FUNCTION__));
+                goto end_pcmloopback;
+            } else if (rc < len) {
+                PJ_LOG(3, (THIS_FILE, "%s: wrote less than buffer size!", __FUNCTION__));
+                goto end_pcmloopback;
+            }
+            PJ_LOG(4, (THIS_FILE, "%s: playback to Dev len is %d.", __FUNCTION__, rc));
+        }
+
+        PJ_LOG(4, (THIS_FILE, "%s: No.%d frame loopback!", __FUNCTION__, ++frames));
+    }
+
+end_pcmloopback:
+    stream_in->common.standby(&stream_in->common);
+    play_ring_tone_ahw_dev_ubus->close_input_stream(play_ring_tone_ahw_dev_ubus, stream_in);
+    stream_out->common.standby(&stream_out->common);
+    play_ring_tone_ahw_dev_ubus->close_output_stream(play_ring_tone_ahw_dev_ubus, stream_out);
+    VCMDeinit();//close the fd of audiostub_ctl when exit the thread.
+
+    go_on_pcmloopback = false;
+bad_stream:
+    PJ_LOG(4, (THIS_FILE, "%s: finished pcm loopback!", __FUNCTION__));
+    PJ_LOG(4, (THIS_FILE, "exit play_ring_tone_thread!"));
+    return;
+}
+
 /* API: create stream */
 static pj_status_t sim_factory_create_stream(pjmedia_aud_dev_factory *f,
                                               const pjmedia_aud_param *param,
@@ -266,6 +548,7 @@ static pj_status_t sim_factory_create_stream(pjmedia_aud_dev_factory *f,
     struct sim_audio_factory *sf = (struct sim_audio_factory*)f;
     pj_pool_t *pool;
     struct sim_audio_stream *strm;
+    pj_status_t status;
 
     /* Create and Initialize stream descriptor */
     pool = pj_pool_create(sf->pf, "sim_audio-dev", 1000, 1000, NULL);
@@ -278,12 +561,49 @@ static pj_status_t sim_factory_create_stream(pjmedia_aud_dev_factory *f,
     strm->play_cb = play_cb;
     strm->user_data = user_data;
 
+    //init global variables
+    play_ring_tone_ahw_dev_ubus = audio_hal_install();
+    if (play_ring_tone_ahw_dev_ubus == NULL) {
+        printf("%s: audio_hal_install failed!\n", __FUNCTION__);
+        exit(-1);
+    }
+
+    //The following config parameters are needed for main thread.
+
     /* Create player stream here */
     if (param->dir & PJMEDIA_DIR_PLAYBACK) {
+        config_parameters(0);
+        status = init_player_stream(strm, &strm->play_strm);
+        //config playback parameters.
+        if (status != PJ_SUCCESS) {
+            stream_destroy(&strm->base);
+            return status;
+        }
     }
 
     /* Create capture stream here */
     if (param->dir & PJMEDIA_DIR_CAPTURE) {
+        config_parameters(1);
+        status = init_capture_stream(strm, &strm->rec_strm);
+        //config record parameters.
+        if (status != PJ_SUCCESS) {
+            stream_destroy(&strm->base);
+            return status;
+        }
+    }
+
+    strm->buffer = pj_pool_alloc(pool, strm->bytes_per_frame);
+    if (!strm->buffer) {
+        pj_pool_release(pool);
+        return PJ_ENOMEM;
+    }
+
+    /* Create and start the thread */
+    status = pj_thread_create(pool, "sim_dev", &sim_dev_thread, strm, 0, 0,
+        &strm->thread);
+    if (status != PJ_SUCCESS) {
+        stream_destroy(&strm->base);
+        return status;
     }
 
     /* Apply the remaining settings */
@@ -293,6 +613,7 @@ static pj_status_t sim_factory_create_stream(pjmedia_aud_dev_factory *f,
                             PJMEDIA_AUD_DEV_CAP_OUTPUT_VOLUME_SETTING,
                             &param->output_vol);
     }
+
 
     /* Done */
     strm->base.op = &stream_op;
@@ -371,8 +692,8 @@ static pj_status_t sim_stream_start(pjmedia_aud_stream *strm)
     struct sim_audio_stream *stream = (struct sim_audio_stream*)strm;
 
     PJ_UNUSED_ARG(stream);
-
-    PJ_LOG(4, (THIS_FILE, "Starting null audio stream"));
+    stream_started = true;
+    PJ_LOG(4, (THIS_FILE, "Starting sim audio stream"));
 
     return PJ_SUCCESS;
 }
@@ -383,8 +704,8 @@ static pj_status_t sim_stream_stop(pjmedia_aud_stream *strm)
     struct sim_audio_stream *stream = (struct sim_audio_stream*)strm;
 
     PJ_UNUSED_ARG(stream);
-
-    PJ_LOG(4, (THIS_FILE, "Stopping null audio stream"));
+    stream_started = false;
+    PJ_LOG(4, (THIS_FILE, "Stopping sim audio stream"));
 
     return PJ_SUCCESS;
 }
@@ -398,6 +719,14 @@ static pj_status_t sim_stream_destroy(pjmedia_aud_stream *strm)
     PJ_ASSERT_RETURN(stream != NULL, PJ_EINVAL);
 
     sim_stream_stop(strm);
+    /* Stop the stream thread */
+    if (stream->thread)
+    {
+        go_on_pcmloopback = false;
+        pj_thread_join(stream->thread);
+        pj_thread_destroy(stream->thread);
+        stream->thread = NULL;
+    }
 
     pj_pool_release(stream->pool);
 
