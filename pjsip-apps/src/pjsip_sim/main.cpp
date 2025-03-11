@@ -5,6 +5,11 @@
 #include <signal.h>
 #include <thread>
 #include "cpptimer.h"
+#ifndef WIN32
+#include <stdlib.h>
+#endif
+#include <malloc.h>
+
 
 std::string sip_server;
 int sip_port = 5060;
@@ -33,7 +38,11 @@ void loadconfig()
         }
         if (tinyxml2::XMLElement* port = eConfig->FirstChildElement("Port")) {
             if (port && port->GetText()) {
+            #ifdef WIN32
                 sip_port = std::stoi(port->GetText());
+            #else
+                sip_port = atoi(port->GetText());
+            #endif
             }
         }
         if (tinyxml2::XMLElement* domain = eConfig->FirstChildElement("Domain")) {
@@ -59,19 +68,19 @@ void loadconfig()
 
 static void sigterm_handler(int signo)
 {
-    running = FALSE;
+    running = false;
 }
 
 static bool cmdline_process(char* cmdline)
 {
-    bool result = TRUE;
+    bool result = true;
     char* name;
     char* last;
     name = strtok(cmdline, " ");
 
 
     if (strcasecmp(name, "exit") == 0 || strcmp(name, "quit") == 0) {
-        result = FALSE;
+        result = false;
     }
 
     else if (strcasecmp(name, "help") == 0) {
@@ -94,7 +103,7 @@ int main(int argc, char* argv[])
     loadconfig();
 
     {
-        running = TRUE;
+        running = true;
         signal(SIGINT, sigterm_handler);
 #ifdef SIGTSTP
         signal(SIGTSTP, sigterm_handler);

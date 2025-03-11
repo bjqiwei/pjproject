@@ -48,9 +48,22 @@ ifeq ($(EXCLUDE_APP),0)
 export PJSYSTEST_EXE:=pjsystest-$(TARGET_NAME)$(HOST_EXE)
 endif
 
+###############################################################################
+# Defines for building pjsip-sim
+#
+export PJSIPSIM_SRCDIR = ../src/pjsip_sim
+export PJSIPSIM_OBJS += $(OS_OBJS) $(M_OBJS) $(CC_OBJS) $(HOST_OBJS) \
+			main.o PjSipSDK.o tinyxml2.o
+export PJSIPSIM_CFLAGS += $(PJ_CFLAGS) $(CFLAGS) 
+export PJSIPSIM_CXXFLAGS += $(PJ_CXXFLAGS) $(CFLAGS) -I$(LIB_PATH)/usr/include
+export PJSIPSIM_LDFLAGS += $(PJ_LDFLAGS) $(PJ_LDLIBS) $(LDFLAGS) -L$(LIB_PATH)/usr/lib -L$(LIB_PATH)/usr/lib64 -llog4cplusS -lprop2uci -laudio-apu -lcutils -lacm -llog -luci -lubox -lrilutil -lubus -ltinyalsa
+ifeq ($(EXCLUDE_APP),0)
+export PJSIPSIM_EXE:=pjsip-sim-$(TARGET_NAME)$(HOST_EXE)
+endif
+
 export CC_OUT CC AR RANLIB HOST_MV HOST_RM HOST_RMDIR HOST_MKDIR OBJEXT LD LDOUT 
 
-TARGETS := $(PJSUA_EXE) $(PJSYSTEST_EXE) samples
+TARGETS := $(PJSUA_EXE) $(PJSYSTEST_EXE) $(PJSIPSIM_EXE) samples
 
 all: $(TARGETS)
 
@@ -64,7 +77,7 @@ distclean: realclean
 
 .PHONY: all dep depend clean realclean distclean
 .PHONY: $(TARGETS)
-.PHONY: $(PJSUA_EXE) $(PJSYSTEST_EXE)
+.PHONY: $(PJSUA_EXE) $(PJSYSTEST_EXE) $(PJSIPSIM_EXE)
 
 pjsua: $(PJSUA_EXE)
 $(PJSUA_EXE):
@@ -86,6 +99,10 @@ pjsystest: $(PJSYSTEST_EXE)
 $(PJSYSTEST_EXE):
 	$(MAKE) -f $(RULES_MAK) APP=PJSYSTEST app=pjsystest $(subst /,$(HOST_PSEP),$(BINDIR)/$@)
 
+pjsip-sim: $(PJSIPSIM_EXE)
+$(PJSIPSIM_EXE):
+	$(MAKE) -f $(RULES_MAK) APP=PJSIPSIM app=pjsip-sim $(subst /,$(HOST_PSEP),$(BINDIR)/$@)
+	
 samples:
 	$(MAKE) -f Samples.mak
 
@@ -96,10 +113,12 @@ pjsua.ko:
 clean depend realclean:
 	$(MAKE) -f $(RULES_MAK) APP=PJSUA app=pjsua $@
 	$(MAKE) -f $(RULES_MAK) APP=PJSYSTEST app=pjsystest $@
+	$(MAKE) -f $(RULES_MAK) APP=PJSIPSIM app=pjsip-sim $@
 	$(MAKE) -f Samples.mak $@
 	@if test "$@" = "depend"; then \
 	  echo '$(BINDIR)/$(PJSUA_EXE): $(APP_LIB_FILES)' >> .pjsua-$(TARGET_NAME).depend; \
 	  echo '$(BINDIR)/$(PJSYSTEST_EXE): $(APP_LIB_FILES)' >> .pjsystest-$(TARGET_NAME).depend; \
+	  echo '$(BINDIR)/$(PJSIPSIM_EXE): $(APP_LIB_FILES)' >> .pjsip-sim-$(TARGET_NAME).depend; \
 	fi
 	@if echo "$(TARGET_NAME)" | grep -q "apple-darwin_ios$$"; then \
 	  for F in $(filter %$(TARGET_NAME).a,$(PJ_LIBXX_FILES)); do \

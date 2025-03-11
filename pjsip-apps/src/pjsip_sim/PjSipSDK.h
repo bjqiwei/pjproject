@@ -81,7 +81,7 @@ public:
 	void setRingFile(const std::string & ringfile);
 	void startRinging();
 	void stopRinging();
-	int Login(std::string server, LONG port, std::string domain, std::string utf8voipId, std::string utf8voipPwd);
+	int Login(std::string server, long port, std::string domain, std::string utf8voipId, std::string utf8voipPwd);
 	std::string makeCall(std::string strCalled);
 	int acceptCall(int callid);
 	int rejectCall(int callid, int reason);

@@ -5,8 +5,18 @@
 #include <atomic>
 #include <map>
 #include <mutex>
+#ifndef WIN32
+#include <sstream>
+namespace std {
+    std::string to_string(int i) {
+        std::ostringstream oss;
+        oss << i;
+        return oss.str();
+    }
+}
+#endif
 
-static std::atomic_ulong g_pjsipReferce = 0;
+static std::atomic_ulong g_pjsipReferce(0);
 class pj::Endpoint * ep;
 
 class MyAudioMediaPort :public pj::AudioMediaPort {
@@ -178,7 +188,7 @@ void CPjSipSDK::onRegState(pj::OnRegStateParam &prm)
 
 void CPjSipSDK::onCallState(const pj::CallInfo & ci)
 {
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << "acc_id:" << ci.accId << ", Call " << ci.id << " state=" << ci.stateText);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << "acc_id:" << ci.accId << ", Call " << ci.id << " state=" << ci.stateText);
 	this->m_callid = ci.id;
 
 	switch (ci.state) {
@@ -219,7 +229,7 @@ void CPjSipSDK::onDtmfDigit(pjsua_call_id call_id, const std::string & digit)
 
 void CPjSipSDK::onIncomingCall(pj::Call * call)
 {
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << "Incoming call from " << call->getId());
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << "Incoming call from " << call->getId());
 
 	this->m_callid = call->getId();
 	
@@ -425,7 +435,7 @@ void CPjSipSDK::startRinging()
 	}
 	catch (pj::Error& err)
 	{
-		LOG4CPLUS_ERROR(log, this->getHost() + " " << "Error play ringfile :" << err.info());
+		LOG4CPLUS_ERROR(log, this->getHost() << " " << "Error play ringfile :" << err.info());
 	}
 
 }
@@ -444,13 +454,13 @@ void CPjSipSDK::stopRinging()
 	}
 	catch (pj::Error& err)
 	{
-		LOG4CPLUS_ERROR(log, this->getHost() + " " << "Error stop play ringfile :" << err.info());
+		LOG4CPLUS_ERROR(log, this->getHost() << " " << "Error stop play ringfile :" << err.info());
 	}
 }
 
-int CPjSipSDK::Login(std::string server, LONG port, std::string domain, std::string utf8voipId, std::string utf8voipPwd)
+int CPjSipSDK::Login(std::string server, long port, std::string domain, std::string utf8voipId, std::string utf8voipPwd)
 {
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__ " server:" << server << ":"  << port << ", domin:" << domain << ",voipId:" << utf8voipId << ", pwd:" << utf8voipPwd);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " server:" << server << ":"  << port << ", domin:" << domain << ",voipId:" << utf8voipId << ", pwd:" << utf8voipPwd);
 
 	this->m_server = server;
 	if (port>0){
@@ -516,13 +526,13 @@ int CPjSipSDK::Login(std::string server, LONG port, std::string domain, std::str
 
 	this->log = log4cplus::Logger::getInstance("CPjSipSDK." + std::to_string(this->m_acc->getId()));
 
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__ " result:");
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " result:");
 	return 0;
 }
 
 std::string CPjSipSDK::makeCall(std::string strCalled) {
 
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__ " called:" << strCalled);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " called:" << strCalled);
 	
 	if (ep->utilVerifySipUri(strCalled) != PJ_SUCCESS){
 		strCalled = "sip:" + strCalled + "@" + this->m_domain;
@@ -534,20 +544,20 @@ std::string CPjSipSDK::makeCall(std::string strCalled) {
 	}
 	catch (pj::Error &err) {
 		this->onMakeCallFailed("", err.status);
-		LOG4CPLUS_ERROR(log, this->getHost() + " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
+		LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
 		return "";
 	}
 	
 	m_callid = call->getId();
 
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__" callid:" << m_callid);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " callid:" << m_callid);
 	return std::to_string(m_callid);
 }
 
 int CPjSipSDK::acceptCall(int callid) {
 	pj::Call * call = pj::Call::lookup(callid);
 	pj_status_t status = PJ_SUCCESS;
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__ " callid:" << callid);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " callid:" << callid);
 
 	try {
 		if (call && (call->getInfo().state == PJSIP_INV_STATE_INCOMING || call->getInfo().state == PJSIP_INV_STATE_EARLY))
@@ -561,18 +571,18 @@ int CPjSipSDK::acceptCall(int callid) {
 			status = PJ_EINVAL;
 	}
 	catch (pj::Error &err) {
-		LOG4CPLUS_ERROR(log, this->getHost() + " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
+		LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
 		status = err.status;
 	}
 
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__ " result:" << status);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " result:" << status);
 	return status;
 }
 
 int CPjSipSDK::rejectCall(int callid, int reason) {
 	pj::Call * call = pj::Call::lookup(callid);
 	pj_status_t status = PJ_SUCCESS;
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__" callid:" << callid << ", reason:" << reason);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " callid:" << callid << ", reason:" << reason);
 	try {
 		if (call) {
 			call->hangup(true);
@@ -581,10 +591,10 @@ int CPjSipSDK::rejectCall(int callid, int reason) {
 			status = PJ_EINVAL;
 	}
 	catch (pj::Error &err) {
-		LOG4CPLUS_ERROR(log, this->getHost() + " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
+		LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
 		status = err.status;
 	}
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__" result:" << status);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " result:" << status);
 	return status;
 }
 
@@ -593,7 +603,7 @@ int CPjSipSDK::pauseCall(int callid)
 	pj::Call * call = pj::Call::lookup(callid);
 	pj_status_t status = PJ_SUCCESS;
 
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__" callid:" << callid);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " callid:" << callid);
 	try {
 		if (call) {
 			call->setHold(true);
@@ -602,10 +612,10 @@ int CPjSipSDK::pauseCall(int callid)
 			status = PJ_EINVAL;
 	}
 	catch (pj::Error &err) {
-		LOG4CPLUS_ERROR(log, this->getHost() + " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
+		LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
 		status = err.status;
 	}
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__" result:" << status);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " result:" << status);
 	if (status == PJ_SUCCESS){
 		this->onCallPaused(std::to_string(callid).c_str());
 	}
@@ -617,7 +627,7 @@ int CPjSipSDK::resumeCall(int callid)
 	pj::Call * call = pj::Call::lookup(callid);
 	pj_status_t status = PJ_SUCCESS;
 
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__" callid:" << callid);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " callid:" << callid);
 	try {
 		if (call) {
 			pj::CallOpParam rpm(true);
@@ -628,10 +638,10 @@ int CPjSipSDK::resumeCall(int callid)
 			status = PJ_EINVAL;
 	}
 	catch (pj::Error &err) {
-		LOG4CPLUS_ERROR(log, this->getHost() + " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
+		LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
 		status = err.status;
 	}
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__" result:" << status);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " result:" << status);
 	if (status == PJ_SUCCESS) {
 		this->onResumed(std::to_string(callid).c_str());
 	}
@@ -643,7 +653,7 @@ int CPjSipSDK::transferCall(int callid, std::string number, int type)
 	pj::Call * call = pj::Call::lookup(callid);
 	pj_status_t status = PJ_SUCCESS;
 
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__" callid:" << callid << ",dest:" << number);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " callid:" << callid << ",dest:" << number);
 	if (ep->utilVerifySipUri(number) != PJ_SUCCESS) {
 		number = "sip:" + number + "@" + this->m_domain;
 	}
@@ -656,11 +666,11 @@ int CPjSipSDK::transferCall(int callid, std::string number, int type)
 			status = PJ_EINVAL;
 	}
 	catch (pj::Error &err) {
-		LOG4CPLUS_ERROR(log, this->getHost() + " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
+		LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
 		status = err.status;
 	}
 
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__" result:" << status);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " result:" << status);
 
 	if (status == PJ_SUCCESS)
 		this->onCallTransfered(std::to_string(callid).c_str(), number.c_str());
@@ -673,7 +683,7 @@ int CPjSipSDK::sendDTMF(int callid, const char dtmf)
 	pj::Call * call = pj::Call::lookup(callid);
 	pj_status_t status = PJ_SUCCESS;
 
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__" callid:" << callid << ",dtmf:" << dtmf);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " callid:" << callid << ",dtmf:" << dtmf);
 	try {
 		if (call) {
 			std::string digit;
@@ -684,18 +694,18 @@ int CPjSipSDK::sendDTMF(int callid, const char dtmf)
 			status = PJ_EINVAL;
 	}
 	catch (pj::Error &err) {
-		LOG4CPLUS_ERROR(log, this->getHost() + " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
+		LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
 		status = err.status;
 	}
 
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__" result:" << status);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " result:" << status);
 	return status;
 }
 
 int CPjSipSDK::releaseCall(int callid) {
 
 	pj_status_t status = PJ_SUCCESS;
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__" callid:" << callid);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " callid:" << callid);
 
 	if (callid < 0){
 		this->m_acc->m_callsmtx.lock();
@@ -717,12 +727,12 @@ int CPjSipSDK::releaseCall(int callid) {
 				status = PJ_EINVAL;
 		}
 		catch (pj::Error &err) {
-			LOG4CPLUS_ERROR(log, this->getHost() + " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
+			LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
 			status = err.status;
 		}
 	}
 
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__" result:" << status);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " result:" << status);
 	return status;
 }
 
@@ -741,11 +751,11 @@ int CPjSipSDK::Logout()
 		}
 	}
 	catch (pj::Error &err) {
-		LOG4CPLUS_ERROR(log, this->getHost() + " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
+		LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
 		status = err.status;
 	}
 
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__ " result:" << status);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " result:" << status);
 	return status;
 }
 
@@ -762,7 +772,7 @@ int CPjSipSDK::unInitialize()
 
 int CPjSipSDK::setCodecEnabled(int codecid, int enabled)
 {
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__" codec:" << codecid << ",enabled :" << enabled);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " codec:" << codecid << ",enabled :" << enabled);
 
 	std::string strcodec_id = getCodecs(codecid);
 
@@ -771,17 +781,17 @@ int CPjSipSDK::setCodecEnabled(int codecid, int enabled)
 		ep->codecSetPriority(strcodec_id, enabled ? PJMEDIA_CODEC_PRIO_NORMAL : PJMEDIA_CODEC_PRIO_DISABLED);
 	}
 	catch (pj::Error &err) {
-		LOG4CPLUS_ERROR(log, this->getHost() + " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
+		LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
 		status = err.status;
 	}
 	
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__ " result:" << status);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " result:" << status);
 	return status;
 }
 
 int CPjSipSDK::getCodecEnabled(int codecid)
 {
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__" codec:" << codecid);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " codec:" << codecid);
 
 	std::string strcodec_id = getCodecs(codecid);
 
@@ -791,33 +801,33 @@ int CPjSipSDK::getCodecEnabled(int codecid)
 		for (auto it : ep->codecEnum2()) {
 			if (it.codecId == strcodec_id) {
 				status = it.priority != PJMEDIA_CODEC_PRIO_DISABLED;
-				LOG4CPLUS_DEBUG(log, this->getHost() + " " << it.codecId << " priority:" << (uint8_t)it.priority << ",desc:" << it.desc);
+				LOG4CPLUS_DEBUG(log, this->getHost() << " " << it.codecId << " priority:" << (uint8_t)it.priority << ",desc:" << it.desc);
 			}
 		}
 	}
 	catch (pj::Error &err) {
-		LOG4CPLUS_ERROR(log, this->getHost() + " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
+		LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
 		status = 0;
 	}
 
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__ " result:" << status);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " result:" << status);
 	return status;
 }
 
 int CPjSipSDK::setMute(bool on)
 {
 	pj_status_t status = PJ_SUCCESS;
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__" on:" << on);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " on:" << on);
 	on = !on;
 	try {
 		ep->audDevManager().getCaptureDevMedia().adjustTxLevel((float)on / 100);
 	}
 	catch (pj::Error &err) {
-		LOG4CPLUS_ERROR(log, this->getHost() + " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
+		LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
 		status = err.status;
 	}
 
-	LOG4CPLUS_DEBUG(log, this->getHost() + " " << __FUNCTION__ " result:" << status);
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " result:" << status);
 	return 0;
 }
 
