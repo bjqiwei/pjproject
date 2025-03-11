@@ -35,6 +35,15 @@ export PJMEDIA_VIDEODEV_SHLIB:=$(PJMEDIA_VIDEODEV_SONAME).$(PJ_VERSION_MAJOR)
 endif
 
 
+HOST_CFLAGS += -I$(LIB_PATH)/usr/include
+HOST_CFLAGS += -I$(LIB_PATH)/usr/include/audio_api
+HOST_CFLAGS += -I$(LIB_PATH)/usr/include/audio_api/stub/
+
+HOST_LDFLAGS = -L$(LIB_PATH)/usr/lib -lprop2uci -laudio-apu -lcutils -lacm -llog -luci -lubox -lrilutil -lubus -ltinyalsa
+
+
+
+
 ###############################################################################
 # Gather all flags.
 #
@@ -43,6 +52,7 @@ export _CFLAGS 	:= $(CC_CFLAGS) $(OS_CFLAGS) $(HOST_CFLAGS) $(M_CFLAGS) \
 		   $(CC_INC)../../pjlib/include \
 		   $(CC_INC)../../pjlib-util/include \
 		   $(CC_INC)../../pjmedia/include \
+                   $(CC_INC)../../pjmedia/src/pjmedia-audiodev/inc \
 		   $(CC_INC)../../pjnath/include \
 		   $(CC_INC)../..
 export _CXXFLAGS:= $(CC_CXXFLAGS) $(OS_CXXFLAGS) $(M_CXXFLAGS) \
@@ -92,7 +102,7 @@ export PJMEDIA_AUDIODEV_SRCDIR = ../src/pjmedia-audiodev
 export PJMEDIA_AUDIODEV_OBJS +=  audiodev.o audiotest.o errno.o \
 				 legacy_dev.o null_dev.o pa_dev.o wmme_dev.o \
 				 alsa_dev.o bb10_dev.o bdimad_dev.o \
-				 android_jni_dev.o opensl_dev.o oboe_dev.o
+				 android_jni_dev.o opensl_dev.o oboe_dev.o sim_dev.o 
 export PJMEDIA_AUDIODEV_CFLAGS += $(_CFLAGS)
 export PJMEDIA_AUDIODEV_CXXFLAGS += $(_CXXFLAGS)
 export PJMEDIA_AUDIODEV_LDFLAGS += $(PJMEDIA_LDLIB) \

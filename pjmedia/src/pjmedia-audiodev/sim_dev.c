@@ -28,6 +28,8 @@
 #include "audio_if_api.h"
 #include "audio_if_audio_hw_mrvl.h"
 #include "audio_hw_mrvl.h"
+#include <cutils/str_parms.h>
+#include "vcm.h"
 
 
 #if PJMEDIA_AUDIO_DEV_HAS_SIM_AUDIO
@@ -280,6 +282,15 @@ static pj_status_t sim_factory_default_param(pjmedia_aud_dev_factory *f,
     return PJ_SUCCESS;
 }
 
+static audio_hw_device_t* play_ring_tone_ahw_dev_ubus;
+
+static struct audio_stream_in* stream_in = NULL;
+static struct audio_stream_out* stream_out = NULL;
+static bool go_on_pcmloopback = true;
+static bool stream_started = false;
+static unsigned int pcm_record_size = 0;       //320:NB, 640:WB
+static unsigned int pcm_playback_size = 0;     //320:NB, 640:WB
+
 /* Internal: create sim player device. */
 static pj_status_t init_player_stream(struct sim_audio_stream* parent, struct sim_channel* sim_strm)
 {
@@ -308,14 +319,6 @@ static pj_status_t init_capture_stream(struct sim_audio_stream* parent, struct s
  Due to modem limited, only support 8k/16k sample rate
  *	Returns:	void
  \*******************************************************************************/
-static audio_hw_device_t* play_ring_tone_ahw_dev_ubus;
-
-static struct audio_stream_in* stream_in = NULL;
-static struct audio_stream_out* stream_out = NULL;
-static bool go_on_pcmloopback = true;
-static bool stream_started = false;
-static unsigned int pcm_record_size = 0;       //320:NB, 640:WB
-static unsigned int pcm_playback_size = 0;     //320:NB, 640:WB
 
 static int config_parameters(int in_out)
 {
@@ -576,7 +579,7 @@ static pj_status_t sim_factory_create_stream(pjmedia_aud_dev_factory *f,
         status = init_player_stream(strm, &strm->play_strm);
         //config playback parameters.
         if (status != PJ_SUCCESS) {
-            stream_destroy(&strm->base);
+            sim_stream_destroy(&strm->base);
             return status;
         }
     }
@@ -587,7 +590,7 @@ static pj_status_t sim_factory_create_stream(pjmedia_aud_dev_factory *f,
         status = init_capture_stream(strm, &strm->rec_strm);
         //config record parameters.
         if (status != PJ_SUCCESS) {
-            stream_destroy(&strm->base);
+            sim_stream_destroy(&strm->base);
             return status;
         }
     }
@@ -602,7 +605,7 @@ static pj_status_t sim_factory_create_stream(pjmedia_aud_dev_factory *f,
     status = pj_thread_create(pool, "sim_dev", &sim_dev_thread, strm, 0, 0,
         &strm->thread);
     if (status != PJ_SUCCESS) {
-        stream_destroy(&strm->base);
+        sim_stream_destroy(&strm->base);
         return status;
     }
 
