@@ -55,8 +55,8 @@ export PJSIPSIM_SRCDIR = ../src/pjsip_sim
 export PJSIPSIM_OBJS += $(OS_OBJS) $(M_OBJS) $(CC_OBJS) $(HOST_OBJS) \
 			main.o PjSipSDK.o tinyxml2.o
 export PJSIPSIM_CFLAGS += $(PJ_CFLAGS) $(CFLAGS) 
-export PJSIPSIM_CXXFLAGS += $(PJ_CXXFLAGS) $(CFLAGS) -I$(LIB_PATH)/usr/include
-export PJSIPSIM_LDFLAGS += $(PJ_LDFLAGS) $(PJ_LDLIBS) $(LDFLAGS) -L$(LIB_PATH)/usr/lib -L$(LIB_PATH)/usr/lib64 -llog4cplusS -lprop2uci -laudio-apu -lcutils -lacm -llog -luci -lubox -lrilutil -lubus -ltinyalsa
+export PJSIPSIM_CXXFLAGS += $(PJ_CXXFLAGS) $(CFLAGS) -I$(LIB_PATH)/usr/include $(CC_INC)../../third_party/include
+export PJSIPSIM_LDFLAGS += $(PJ_LDFLAGS) $(PJ_LDLIBS) $(PJ_LDXXLIBS) $(LDFLAGS) -llog4cplusS -lstdc++
 ifeq ($(EXCLUDE_APP),0)
 export PJSIPSIM_EXE:=pjsip-sim-$(TARGET_NAME)$(HOST_EXE)
 endif
