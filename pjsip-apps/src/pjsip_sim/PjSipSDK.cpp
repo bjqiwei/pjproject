@@ -364,8 +364,10 @@ CPjSipSDK::CPjSipSDK()
 CPjSipSDK::~CPjSipSDK()
 {
 	//pjsua_acc_set_user_data(m_acc->getId(), NULL);
+    if(m_acc){
     m_acc->shutdown();
 	delete m_acc;
+    }
 	if (m_player)
 		delete m_player;
 	unInitialize();
