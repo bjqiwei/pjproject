@@ -15,6 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+#ifdef PJMEDIA_AUDIO_DEV_HAS_SIM_AUDIO
 #include <pjmedia-audiodev/audiodev_imp.h>
 #include <pj/assert.h>
 #include <pj/log.h>
@@ -32,7 +33,6 @@
 #include "vcm.h"
 
 
-#if PJMEDIA_AUDIO_DEV_HAS_SIM_AUDIO
 
 #define THIS_FILE               "sim_dev.c"
 
@@ -736,4 +736,4 @@ static pj_status_t sim_stream_destroy(pjmedia_aud_stream *strm)
     return PJ_SUCCESS;
 }
 
-#endif  /* PJMEDIA_AUDIO_DEV_HAS_NULL_AUDIO */
+#endif  /* PJMEDIA_AUDIO_DEV_HAS_SIM_AUDIO */
