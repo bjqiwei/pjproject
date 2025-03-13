@@ -15,12 +15,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-#ifdef PJMEDIA_AUDIO_DEV_HAS_SIM_AUDIO
 #include <pjmedia-audiodev/audiodev_imp.h>
 #include <pj/assert.h>
 #include <pj/log.h>
 #include <pj/os.h>
 #include <stdbool.h>
+#if PJMEDIA_AUDIO_DEV_HAS_SIM_AUDIO
 /*sim  Include files*/
 #include "audio_if_types.h"
 #include "audio_if_ubus.h"
