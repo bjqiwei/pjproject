@@ -83,13 +83,11 @@ public:
 					pj::Endpoint::instance().audDevManager().setPlaybackDev(i);
 				}
 			}
-
+            //pj::MediaFormatAudio fmt;
+            //fmt.init(PJMEDIA_FORMAT_PCMU, 8000, 1, 20000, 8, 64000, 64000);
+            //m_audioMediaPort.createPort("sim_dev", fmt);
 			//pj::Endpoint::instance().audDevManager().getCaptureDevMedia().adjustTxLevel();
 			//pj::Endpoint::instance().audDevManager().getPlaybackDevMedia().adjustRxLevel();
-            pj::MediaFormatAudio fmt;
-            fmt.init(PJMEDIA_FORMAT_PCMA,8000,1, 20*1000, 8,64*1024,96*1024);
-
-            m_audioMediaPort.createPort("test", fmt);
 		}
 		catch (pj::Error& err)
 		{
@@ -125,11 +123,15 @@ public:
 		LOG4CPLUS_DEBUG(log, "hasMedia:" << this->hasMedia());
 		for (auto & media : this->getInfo().media){
 			if (media.type == PJMEDIA_TYPE_AUDIO) {
+
 				pj::AudioMedia *aud_med = (pj::AudioMedia *) this->getMedia(media.index);
-				//pj::AudioMedia& speaker_med = pj::Endpoint::instance().audDevManager().getPlaybackDevMedia();
-				aud_med->startTransmit(m_audioMediaPort);
-				//pj::AudioMedia& mic_med = pj::Endpoint::instance().audDevManager().getCaptureDevMedia();
-                m_audioMediaPort.startTransmit(*aud_med);
+				//aud_med->startTransmit(m_audioMediaPort);
+    //            m_audioMediaPort.startTransmit(*aud_med);
+
+                pj::AudioMedia& speaker_med = pj::Endpoint::instance().audDevManager().getPlaybackDevMedia();
+                aud_med->startTransmit(speaker_med);
+                pj::AudioMedia& mic_med = pj::Endpoint::instance().audDevManager().getCaptureDevMedia();
+                mic_med.startTransmit(*aud_med);
 
 				//if (m_micro.getPortId() == PJSUA_INVALID_ID) {
 					//m_micro.createRecorder(utf8AppDataDir + "\\micro.wav");
