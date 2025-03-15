@@ -104,6 +104,7 @@ export PJMEDIA_AUDIODEV_OBJS +=  audiodev.o audiotest.o errno.o \
 				 alsa_dev.o bb10_dev.o bdimad_dev.o \
 				 android_jni_dev.o opensl_dev.o oboe_dev.o sim_dev.o 
 export PJMEDIA_AUDIODEV_CFLAGS += $(_CFLAGS)
+export PJMEDIA_AUDIODEV_CFLAGS += -pipe -march=armv7-a -mtune=cortex-a7 -mfpu=neon-vfpv4 -fno-caller-saves -fhonour-copts -Wno-error=unused-function -Wno-error=unused-parameter -Wno-error=unused-variable -Wno-error=pointer-sign -mfloat-abi=hard -DPXA1826_AUDIO -DMARVELL_EXTENDED
 export PJMEDIA_AUDIODEV_CXXFLAGS += $(_CXXFLAGS)
 export PJMEDIA_AUDIODEV_LDFLAGS += $(PJMEDIA_LDLIB) \
 				   $(PJLIB_LDLIB) \

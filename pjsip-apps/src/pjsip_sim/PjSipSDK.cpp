@@ -323,7 +323,6 @@ public:
 	virtual void write(const pj::LogEntry &entry)override
 	{ 
 		std::string msg = entry.msg; 
-		msg.pop_back();
 		if (entry.level == 5) {
 			LOG4CPLUS_TRACE(log, msg);
 		}
