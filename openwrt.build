@@ -3,4 +3,4 @@ cmake  -DCMAKE_CXX_FLAGS="-pipe -march=armv7-a"  -DCMAKE_INSTALL_PREFIX=$(realpa
 
 cd ../..
 
-./configure --host=x86_64-linux --target=armv7 LD=arm-openwrt-linux-uclibcgnueabi-gcc LDFLAGS="-L/root/ltedtu/A59C4B02V01A76xxMB_Linux_ABSDK_240409_open_sdk/simcom_crosscompile/sysroots/target-arm/usr/lib -lprop2uci -laudio-apu -lcutils -lacm -llog -luci -lubox -lrilutil -lubus -ltinyalsa" && make
+./configure --host=x86_64-linux --target=armv7 LD=arm-openwrt-linux-uclibcgnueabi-gcc LDFLAGS="-L/root/ltedtu/A59C4B02V01A76xxMB_Linux_ABSDK_240409_open_sdk/simcom_crosscompile/sysroots/target-arm/usr/lib -lprop2uci -laudio-apu -lcutils -lacm -llog -luci -lubox -lrilutil -lubus -ltinyalsa" && make clean && make
