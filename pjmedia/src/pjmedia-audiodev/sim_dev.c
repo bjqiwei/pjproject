@@ -525,7 +525,7 @@ static int PJ_THREAD_FUNC sim_dev_thread(void* arg)
                     strm->param.samples_per_frame
                 );
             }
-            PJ_LOG(4, (THIS_FILE, "format %d: record from Dev size is %d! No.%d frame loopback!", strm->fmt_id, cap_len, frames));
+            //PJ_LOG(4, (THIS_FILE, "format %d: record from Dev size is %d! No.%d frame loopback!", strm->fmt_id, cap_len, frames));
             status = (*strm->rec_cb)(strm->user_data, frame);
             strm->rec_strm.timestamp.u64 += strm->param.samples_per_frame /
                 strm->param.channel_count;
@@ -618,7 +618,7 @@ static int PJ_THREAD_FUNC sim_dev_thread(void* arg)
                 PJ_LOG(3, (THIS_FILE, "%s: wrote less than buffer size!", __FUNCTION__));
                 goto end_pcmloopback;
             }
-            PJ_LOG(4, (THIS_FILE, "format %d: playback to Dev len is %d.No.%d frame loopback!", strm->fmt_id, rc, frames));
+            //PJ_LOG(4, (THIS_FILE, "format %d: playback to Dev len is %d.No.%d frame loopback!", strm->fmt_id, rc, frames));
         }
 
     }

@@ -56,7 +56,7 @@ export PJSIPSIM_OBJS += $(OS_OBJS) $(M_OBJS) $(CC_OBJS) $(HOST_OBJS) \
 			main.o PjSipSDK.o tinyxml2.o
 export PJSIPSIM_CFLAGS += $(PJ_CFLAGS) $(CFLAGS) 
 export PJSIPSIM_CXXFLAGS += $(PJ_CXXFLAGS) $(CFLAGS) -I$(LIB_PATH)/usr/include $(CC_INC)../../third_party/include
-export PJSIPSIM_LDFLAGS += $(PJ_LDFLAGS) $(PJ_LDLIBS) $(PJ_LDXXLIBS) $(LDFLAGS) -llog4cplusS -lstdc++
+export PJSIPSIM_LDFLAGS += $(PJ_LDFLAGS) $(PJ_LDLIBS) $(PJ_LDXXLIBS) $(LDFLAGS) -llog4cplusS -lstdc++ -lmtel
 ifeq ($(EXCLUDE_APP),0)
 export PJSIPSIM_EXE:=pjsip-sim-$(TARGET_NAME)$(HOST_EXE)
 endif
