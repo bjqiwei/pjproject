@@ -78,7 +78,12 @@ struct sim_audio_stream
     struct sim_channel  rec_strm;          /**< Capture stream.       */
 
     void*               buffer;            /**< Temp. frame buffer.   */
+    pjmedia_format_id    fmt_id;            /**< Frame format          */
+    pj_uint8_t           silence_char;      /**< Silence pattern       */
     unsigned            bytes_per_frame;   /**< Bytes per frame       */
+
+    pjmedia_frame_ext* xfrm;              /**< Extended frame buffer */
+    unsigned             xfrm_size;         /**< Total ext frm size    */
 
     pj_thread_t* thread;            /**< Thread handle.        */
 };
@@ -143,6 +148,18 @@ static pjmedia_aud_stream_op stream_op =
 /*
  * Init sim_audio audio driver.
  */
+
+#ifndef WIN32
+audio_hw_device_t* play_ring_tone_ahw_dev_ubus;
+#endif
+
+static struct audio_stream_in* stream_in = NULL;
+static struct audio_stream_out* stream_out = NULL;
+static bool go_on_pcmloopback = true;
+static bool stream_started = false;
+static unsigned int pcm_record_size = 0;       //320:NB, 640:WB
+static unsigned int pcm_playback_size = 0;     //320:NB, 640:WB
+
 pjmedia_aud_dev_factory* pjmedia_sim_audio_factory(pj_pool_factory *pf)
 {
     struct sim_audio_factory *f;
@@ -175,7 +192,9 @@ static pj_status_t sim_factory_init(pjmedia_aud_dev_factory *f)
     pj_ansi_strxcpy(sdi->info.driver, "sim", sizeof(sdi->info.driver));
     sdi->info.input_count = 1;
     sdi->info.output_count = 1;
-    sdi->info.default_samples_per_sec = 16000;
+#ifndef WIN32
+    sdi->info.default_samples_per_sec = (pcm_record_size == PCM_NB_BUF_SIZE ? 8000 : 16000);
+#endif
     /* Set the device capabilities here */
     sdi->info.caps = 0;
 
@@ -282,17 +301,6 @@ static pj_status_t sim_factory_default_param(pjmedia_aud_dev_factory *f,
     return PJ_SUCCESS;
 }
 
-#ifndef WIN32
-static audio_hw_device_t* play_ring_tone_ahw_dev_ubus;
-#endif
-
-static struct audio_stream_in* stream_in = NULL;
-static struct audio_stream_out* stream_out = NULL;
-static bool go_on_pcmloopback = true;
-static bool stream_started = false;
-static unsigned int pcm_record_size = 0;       //320:NB, 640:WB
-static unsigned int pcm_playback_size = 0;     //320:NB, 640:WB
-
 /* Internal: create sim player device. */
 static pj_status_t init_player_stream(struct sim_audio_stream* parent, struct sim_channel* sim_strm)
 {
@@ -315,7 +323,7 @@ static pj_status_t init_capture_stream(struct sim_audio_stream* parent, struct s
  *               ASR1826 and playback the PCM stream to ASR1826.
  *
  *   NOTE:
- sample rate is 8000
+ sample rate is 16000
  channel number is 1
  bit of sample is 16
  Due to modem limited, only support 8k/16k sample rate
@@ -333,7 +341,7 @@ static int config_parameters(int in_out)
     bool update_vcm = false;
 
     direction = in_out;/* 0-play, 1-record */
-    type = 0; /* 0:PCM_NB_BUF_SIZE, 1:PCM_WB_BUF_SIZE */
+    type = 1; /* 0:PCM_NB_BUF_SIZE, 1:PCM_WB_BUF_SIZE */
     srcdst = 2;/* 0-None, 1-Near end, 2-Far end, 3-Both ends */
     priority = 1;/* 0-Do not combine(override), 1-Combine */
     dest = 0;/* 0-Near codec, 1-Near Vocoder */
@@ -399,7 +407,7 @@ static int config_parameters(int in_out)
     //printf("Direction is %d, Type is %d, Src_Dst is %d, Priority is %d, Dest is %d. \n",data[0], data[1], data[2], data[3], data[4]);
 
     if (update_vcm) {
-        configure_vcm(data);   /*TODO check if all inputs got all values successfully*/
+        configure_vcm((unsigned int *)data);   /*TODO check if all inputs got all values successfully*/
     }
 #endif
     return 0;
@@ -410,10 +418,11 @@ static int PJ_THREAD_FUNC sim_dev_thread(void* arg)
 {
 
     struct sim_audio_stream* strm = (struct sim_audio_stream*)arg;
+    pj_status_t status = PJ_SUCCESS;
+#ifndef WIN32
     int rc, len, cap_len;
     char buffer[PCM_WB_BUF_SIZE];
     unsigned int frames = 0;
-    pj_status_t status = PJ_SUCCESS;
 
     PJ_LOG(4, (THIS_FILE, "enter sim_dev_thread."));
 
@@ -461,37 +470,63 @@ static int PJ_THREAD_FUNC sim_dev_thread(void* arg)
     PJ_LOG(3, (THIS_FILE, "%s: starting pcmrecord %d bytes every 20ms!", __FUNCTION__, pcm_record_size));
     go_on_pcmloopback = true;
     while (go_on_pcmloopback) {
-        //record the needed format stream from the device.
-        //only read pcm stream, no send command.
+
         if (!stream_started)
         {
+            //sleep 20 millisecond
+            pj_thread_sleep(20);
             continue;
         }
-        //sleep 20 millisecond
-        pj_thread_sleep(20);
+        ++frames;
+        //record the needed format stream from the device.
+        //PJ_LOG(4, (THIS_FILE, "%s: No.%d frame loopback!","read", ++frames));
         {
             cap_len = stream_in->read(stream_in, buffer, pcm_record_size);
-            if (len < 0) {
+            if (cap_len < 0) {
                 PJ_LOG(3, (THIS_FILE, "%s: error reading!", __FUNCTION__));
                 goto end_pcmloopback;
             }
-            PJ_LOG(4, (THIS_FILE, "record stream . %d bytes", cap_len));
+            //PJ_LOG(4, (THIS_FILE, "record stream . %d bytes", cap_len));
             pjmedia_frame pcm_frame, * frame;
 
-            /* PCM mode */
+            if (strm->fmt_id == PJMEDIA_FORMAT_L16) {
+                /* PCM mode */
+                if (cap_len < strm->bytes_per_frame)
+                    pj_bzero(buffer + cap_len,
+                        strm->bytes_per_frame - cap_len);
 
-            /* Copy the audio data out of the wave buffer. */
-            pj_memcpy(strm->buffer, buffer, pcm_record_size);
+                /* Copy the audio data out of the wave buffer. */
+                pj_memcpy(strm->buffer, buffer, strm->bytes_per_frame);
 
-            /* Prepare frame */
-            frame = &pcm_frame;
-            frame->type = PJMEDIA_FRAME_TYPE_AUDIO;
-            frame->buf = strm->buffer;
-            frame->size = pcm_record_size;
-            frame->timestamp.u64 = strm->rec_strm.timestamp.u64;
-            frame->bit_info = 0;
-            PJ_LOG(4, (THIS_FILE, "%s: record from Dev size is %d!", __FUNCTION__, len));
-            status = (strm->rec_cb)(strm->user_data, frame);
+                /* Prepare frame */
+                frame = &pcm_frame;
+                frame->type = PJMEDIA_FRAME_TYPE_AUDIO;
+                frame->buf = strm->buffer;
+                frame->size = strm->bytes_per_frame;
+                frame->timestamp.u64 = strm->rec_strm.timestamp.u64;
+                frame->bit_info = 0;
+
+            }
+            else {
+                /* Codec mode */
+                frame = &strm->xfrm->base;
+
+                frame->type = PJMEDIA_FRAME_TYPE_EXTENDED;
+                frame->buf = NULL;
+                frame->size = strm->bytes_per_frame;
+                frame->timestamp.u64 = strm->rec_strm.timestamp.u64;
+                frame->bit_info = 0;
+
+                strm->xfrm->samples_cnt = 0;
+                strm->xfrm->subframe_cnt = 0;
+                pjmedia_frame_ext_append_subframe(
+                    strm->xfrm, buffer,
+                    strm->bytes_per_frame * 8,
+                    strm->param.samples_per_frame
+                );
+            }
+            PJ_LOG(4, (THIS_FILE, "format %d: record from Dev size is %d! No.%d frame loopback!", strm->fmt_id, cap_len, frames));
+            status = (*strm->rec_cb)(strm->user_data, frame);
             strm->rec_strm.timestamp.u64 += strm->param.samples_per_frame /
                 strm->param.channel_count;
 
@@ -500,8 +535,6 @@ static int PJ_THREAD_FUNC sim_dev_thread(void* arg)
 
         //
         //TODO:send the above IP package to far-end
-        //
-#ifdef ENABLE_SIM_DEV
         //playback the needed format stream to device.
         //only write pcm stream, no send command.
 
@@ -509,14 +542,72 @@ static int PJ_THREAD_FUNC sim_dev_thread(void* arg)
             pjmedia_frame pcm_frame, * frame;
             frame = &pcm_frame;
 
-            frame->type = PJMEDIA_FRAME_TYPE_AUDIO;
-            frame->size = strm->bytes_per_frame;
-            frame->buf = buffer;
-            frame->timestamp.u64 = strm->play_strm.timestamp.u64;
-            frame->bit_info = 0;
+            if (strm->fmt_id == PJMEDIA_FORMAT_L16) {
+                /* PCM mode */
+                frame = &pcm_frame;
+
+                frame->type = PJMEDIA_FRAME_TYPE_AUDIO;
+                frame->size = strm->bytes_per_frame;
+                frame->buf = buffer;
+                frame->timestamp.u64 = strm->play_strm.timestamp.u64;
+                frame->bit_info = 0;
+            }
+            else {
+                /* Codec mode */
+                frame = &strm->xfrm->base;
+
+                strm->xfrm->base.type = PJMEDIA_FRAME_TYPE_EXTENDED;
+                strm->xfrm->base.size = strm->bytes_per_frame;
+                strm->xfrm->base.buf = NULL;
+                strm->xfrm->base.timestamp.u64 = strm->play_strm.timestamp.u64;
+                strm->xfrm->base.bit_info = 0;
+            }
+
+            /* Get frame from application. */
+            //PJ_LOG(5,(THIS_FILE, "xxx %u play_cb", play_cnt++));
             status = (*strm->play_cb)(strm->user_data, frame);
 
-            rc = stream_out->write(stream_out, buffer, len);
+            if (status != PJ_SUCCESS)
+                break;
+
+            if (strm->fmt_id == PJMEDIA_FORMAT_L16) {
+                /* PCM mode */
+                if (frame->type == PJMEDIA_FRAME_TYPE_NONE) {
+                    pj_bzero(buffer, strm->bytes_per_frame);
+                }
+                else if (frame->type == PJMEDIA_FRAME_TYPE_EXTENDED) {
+                    pj_assert(!"Frame type not supported");
+                }
+                else if (frame->type == PJMEDIA_FRAME_TYPE_AUDIO) {
+                    /* Nothing to do */
+                }
+                else {
+                    pj_assert(!"Frame type not supported");
+                }
+            }
+            else {
+                /* Codec mode */
+                if (frame->type == PJMEDIA_FRAME_TYPE_NONE) {
+                    pj_memset(buffer, strm->silence_char,
+                        strm->bytes_per_frame);
+                }
+                else if (frame->type == PJMEDIA_FRAME_TYPE_EXTENDED) {
+                    unsigned sz;
+                    sz = pjmedia_frame_ext_copy_payload(strm->xfrm,
+                        buffer,
+                        strm->bytes_per_frame);
+                    if (sz < strm->bytes_per_frame) {
+                        pj_memset((char*)buffer + sz,
+                            strm->silence_char,
+                            strm->bytes_per_frame - sz);
+                    }
+                }
+                else {
+                    pj_assert(!"Frame type not supported");
+                }
+            }
+
+            rc = stream_out->write(stream_out, buffer, frame->size);
             strm->play_strm.timestamp.u64 += strm->param.samples_per_frame /
                 strm->param.channel_count;
 
@@ -527,11 +618,9 @@ static int PJ_THREAD_FUNC sim_dev_thread(void* arg)
                 PJ_LOG(3, (THIS_FILE, "%s: wrote less than buffer size!", __FUNCTION__));
                 goto end_pcmloopback;
             }
-            PJ_LOG(4, (THIS_FILE, "%s: playback to Dev len is %d.", __FUNCTION__, rc));
+            PJ_LOG(4, (THIS_FILE, "format %d: playback to Dev len is %d.No.%d frame loopback!", strm->fmt_id, rc, frames));
         }
-#endif
 
-        PJ_LOG(4, (THIS_FILE, "%s: No.%d frame loopback!", __FUNCTION__, ++frames));
     }
 
 end_pcmloopback:
@@ -541,9 +630,10 @@ end_pcmloopback:
     play_ring_tone_ahw_dev_ubus->close_output_stream(play_ring_tone_ahw_dev_ubus, stream_out);
     VCMDeinit();//close the fd of audiostub_ctl when exit the thread.
     go_on_pcmloopback = false;
+#endif
 bad_stream:
     PJ_LOG(4, (THIS_FILE, "exit sim_dev_thread!"));
-    return 0;
+    return status;
 }
 
 /* API: create stream */
@@ -557,7 +647,22 @@ static pj_status_t sim_factory_create_stream(pjmedia_aud_dev_factory *f,
     struct sim_audio_factory *sf = (struct sim_audio_factory*)f;
     pj_pool_t *pool;
     struct sim_audio_stream *strm;
+    pj_uint8_t silence_char;
     pj_status_t status;
+
+    switch (param->ext_fmt.id) {
+    case PJMEDIA_FORMAT_L16:
+        silence_char = '\0';
+        break;
+    case PJMEDIA_FORMAT_ALAW:
+        silence_char = (pj_uint8_t)'\xd5';
+        break;
+    case PJMEDIA_FORMAT_ULAW:
+        silence_char = (pj_uint8_t)'\xff';
+        break;
+    default:
+        return PJMEDIA_EAUD_BADFORMAT;
+    }
 
     /* Create and Initialize stream descriptor */
     pool = pj_pool_create(sf->pf, "sim_audio-dev", 1000, 1000, NULL);
@@ -569,6 +674,8 @@ static pj_status_t sim_factory_create_stream(pjmedia_aud_dev_factory *f,
     strm->rec_cb = rec_cb;
     strm->play_cb = play_cb;
     strm->user_data = user_data;
+    strm->fmt_id = param->ext_fmt.id;
+    strm->silence_char = silence_char;
 
 #ifndef WIN32
     //init global variables
@@ -583,7 +690,11 @@ static pj_status_t sim_factory_create_stream(pjmedia_aud_dev_factory *f,
 
     /* Create player stream here */
     if (param->dir & PJMEDIA_DIR_PLAYBACK) {
-        config_parameters(0);
+        status = config_parameters(0);
+        if (status != PJ_SUCCESS) {
+            sim_stream_destroy(&strm->base);
+            return status;
+        }
         status = init_player_stream(strm, &strm->play_strm);
         //config playback parameters.
         if (status != PJ_SUCCESS) {
@@ -594,7 +705,11 @@ static pj_status_t sim_factory_create_stream(pjmedia_aud_dev_factory *f,
 
     /* Create capture stream here */
     if (param->dir & PJMEDIA_DIR_CAPTURE) {
-        config_parameters(1);
+        status = config_parameters(1);
+        if (status != PJ_SUCCESS) {
+            sim_stream_destroy(&strm->base);
+            return status;
+        }
         status = init_capture_stream(strm, &strm->rec_strm);
         //config record parameters.
         if (status != PJ_SUCCESS) {
@@ -608,6 +723,15 @@ static pj_status_t sim_factory_create_stream(pjmedia_aud_dev_factory *f,
     if (!strm->buffer) {
         pj_pool_release(pool);
         return PJ_ENOMEM;
+    }
+
+    /* If format is extended, must create buffer for the extended frame. */
+    if (strm->fmt_id != PJMEDIA_FORMAT_L16) {
+        strm->xfrm_size = sizeof(pjmedia_frame_ext) +
+            32 * sizeof(pjmedia_frame_ext_subframe) +
+            strm->bytes_per_frame + 4;
+        strm->xfrm = (pjmedia_frame_ext*)
+            pj_pool_alloc(pool, strm->xfrm_size);
     }
 
     /* Create and start the thread */
