@@ -88,6 +88,8 @@ static void sigterm_handler(int signo)
     running = false;
 }
 
+CPjSipSDK* p_sipsdk = nullptr;
+int serialfd = 0;
 #ifndef WIN32
 void ReceiveDataFromChan(int serialfd)
 {
@@ -97,6 +99,9 @@ void ReceiveDataFromChan(int serialfd)
 
     log4cplus::Logger log = log4cplus::Logger::getInstance("ReceiveDataFromChan");
     LOG4CPLUS_INFO(log, "ReceiveDataFromChan Start");
+    if (!pj::Endpoint::instance().libIsThreadRegistered()) {
+        pj::Endpoint::instance().libRegisterThread("ReceiveDataFromChan");
+    }
     int BUFFSIZE = 512;
     char buffer[BUFFSIZE];
 
@@ -111,6 +116,21 @@ void ReceiveDataFromChan(int serialfd)
 
         buffer[bytes] = '\0';
         LOG4CPLUS_INFO(log, "<<" << buffer);
+        std::string received = buffer;
+        if (received.find("+CLCC: 1,0,2,0,0") != std::string::npos) {
+            p_sipsdk->startRinging(false);
+        }
+        else if (received.find("RINGBACK") != std::string::npos) {
+            p_sipsdk->startRinging(true);
+        }
+        else if (received.find("CALLDISCONNECT") != std::string::npos) {
+            p_sipsdk->releaseCall(p_sipsdk->getCurrentCall());
+        }
+        else if (received.find("CONNECT") != std::string::npos) {
+            p_sipsdk->acceptCall(p_sipsdk->getCurrentCall());
+        }
+
+
     }
     LOG4CPLUS_INFO(log, "ReceiveDataFromChan end");
 }
@@ -180,11 +200,31 @@ int main(int argc, char* argv[])
 
                 LOG4CPLUS_INFO(log, prm.rdata.srcAddress << " " << "onRegistered ");
             }
+            void onIncomingCallReceived(int callType, const char* callid, const char* caller, const char * called)  //衄網請網��
+            {
+                LOG4CPLUS_INFO(log, "onIncomingCallReceived callType:" << callType << " callid:" << callid << " caller:" << caller << " called:" << called);
+#ifndef WIN32
+                std::string atcmd = std::string("atd") + called+";" + "\r\n";
+                int rc = write(serialfd, atcmd.data(), atcmd.size());
+                LOG4CPLUS_INFO(log,  "send " << atcmd);
+#endif
+            }
+
+            void onCallReleased(const char* callid, int reason)				//網請境儂
+            {
+                LOG4CPLUS_INFO(log, "onCallReleased " << callid);
+#ifndef WIN32
+                std::string atcmd = std::string("ATH") + "\r\n";
+                int rc = write(serialfd, atcmd.data(), atcmd.size());
+                LOG4CPLUS_INFO(log, "send " << atcmd);
+#endif
+            }
             CppTime::Timer timer;
         }
         sipsdk;
+        p_sipsdk = &sipsdk;
 #ifndef WIN32
-        int serialfd = connectUnixSocket(SERIAL_PORT_NAME);
+        serialfd = connectUnixSocket(SERIAL_PORT_NAME);
 
         if (serialfd < 0) {
             LOG4CPLUS_ERROR(log, "ERROR: OPENING DEVICE: " << SERIAL_PORT_NAME);
@@ -222,6 +262,8 @@ int main(int argc, char* argv[])
 #ifndef WIN32
                 if(running){
                     LOG4CPLUS_INFO(log, "send " << cmdline);
+                    cmdline[strlen(cmdline)] = '\r';
+                    cmdline[strlen(cmdline)] = '\n';
                     int rc = write(serialfd, cmdline, strlen(cmdline)+1);
                     if (rc < 0) {
                         LOG4CPLUS_ERROR(log, "AT_CHAT_CLIENT: CANNOT SEND DATA");

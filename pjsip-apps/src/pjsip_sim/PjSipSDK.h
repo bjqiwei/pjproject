@@ -38,7 +38,7 @@ public:
 private:// 虚函数   
 	virtual void onRegistered(pj::OnRegStateParam& prm);					//与云通讯平台连接成功
 	virtual void onRegisterError(int reason, const char * desc);		//与云通讯平台连接断开或者出错
-	virtual void onIncomingCallReceived(int callType, const char *callid, const char *caller);  //有呼叫呼入
+	virtual void onIncomingCallReceived(int callType, const char *callid, const char *caller, const char * called);  //有呼叫呼入
 	virtual void onCallProceeding(const char*callied);		//呼叫已经被云通讯平台处理
 	virtual void onCallAlerting(const char *callid);			//呼叫振铃
 	virtual void onCallAnswered(const char *callid);			//外呼对方应答
@@ -79,7 +79,7 @@ public:
 	static int unInitialize();
 
 	void setRingFile(const std::string & ringfile);
-	void startRinging();
+	void startRinging(bool hasMedia);
 	void stopRinging();
 	int Login(std::string server, long port, std::string domain, std::string utf8voipId, std::string utf8voipPwd);
 	std::string makeCall(std::string strCalled);

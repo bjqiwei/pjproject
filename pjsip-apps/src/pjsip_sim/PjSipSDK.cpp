@@ -112,7 +112,7 @@ public:
 			std::recursive_mutex & mtx = m_acc->m_callsmtx;
 			mtx.lock();
 			m_acc->m_calls.erase(this->getId());
-			delete this;
+			//delete this;
 			mtx.unlock();
 		}
 	}
@@ -198,10 +198,12 @@ void CPjSipSDK::onCallState(const pj::CallInfo & ci)
 		this->onCallProceeding(std::to_string(ci.id).c_str());
 		break;
 	case PJSIP_INV_STATE_INCOMING: {
-		startRinging();
+		//startRinging();
 		std::string remote = ci.remoteUri;
 		std::string caller = remote.substr(remote.find(":"), remote.find("@") - remote.find(":"));
-		this->onIncomingCallReceived(0, std::to_string(ci.id).c_str(), caller.c_str());
+        std::string local = ci.localUri;
+        std::string called = local.substr(local.find(":") + 1, local.find("@") - local.find(":") - 1);
+		this->onIncomingCallReceived(0, std::to_string(ci.id).c_str(), caller.c_str(), called.c_str());
 		}
 		break;
 	case PJSIP_INV_STATE_EARLY:
@@ -212,11 +214,11 @@ void CPjSipSDK::onCallState(const pj::CallInfo & ci)
 		//g_sipAccount[ci.acc_id]->onCallAlerting(std::to_string(call_id).c_str());
 		break;
 	case PJSIP_INV_STATE_CONFIRMED:
-		stopRinging();
+		//stopRinging();
 		this->onCallAnswered(std::to_string(ci.id).c_str());
 		break;
 	case PJSIP_INV_STATE_DISCONNECTED:
-		stopRinging();
+		//stopRinging();
 		this->onCallReleased(std::to_string(ci.id).c_str(), ci.lastStatusCode);
 		break;
 	}
@@ -237,8 +239,10 @@ void CPjSipSDK::onIncomingCall(pj::Call * call)
 	
 	std::string remote = call->getInfo().remoteUri;
 	std::string caller = remote.substr(remote.find(":")+1, remote.find("@")- (remote.find(":")+1));
-	startRinging();
-	this->onIncomingCallReceived(0, std::to_string(call->getInfo().id).c_str(), caller.c_str());
+    std::string local = call->getInfo().localUri;
+    std::string called = local.substr(local.find(":") + 1, local.find("@") - (local.find(":") - 1));
+	//startRinging();
+	this->onIncomingCallReceived(0, std::to_string(call->getInfo().id).c_str(), caller.c_str(), called.c_str());
 }
 
 void CPjSipSDK::onRegistered(pj::OnRegStateParam& prm)
@@ -251,9 +255,9 @@ void CPjSipSDK::onRegisterError(int reason, const char* desc)
     LOG4CPLUS_INFO(log, reason << " " << desc << " " << "onRegisterError ");
 }
 
-void CPjSipSDK::onIncomingCallReceived(int callType, const char* callid, const char* caller)
+void CPjSipSDK::onIncomingCallReceived(int callType, const char* callid, const char* caller, const char * called)
 {
-    LOG4CPLUS_INFO(log, callType << " " << callid << " " << caller);
+    LOG4CPLUS_INFO(log, callType << " " << callid << " " << caller << ">>" << called);
 }
 
 void CPjSipSDK::onCallProceeding(const char* callied)
@@ -425,8 +429,9 @@ void CPjSipSDK::setRingFile(const std::string & ringfile)
 	LOG4CPLUS_DEBUG(log, "setRingFile:" << this->m_ringFile);
 }
 
-void CPjSipSDK::startRinging()
+void CPjSipSDK::startRinging(bool hasMedia)
 {
+#ifdef WIN32
 	pj::AudioMedia& play_med = ep->audDevManager().getPlaybackDevMedia();
 	try{
 		if (this->m_player == nullptr) {
@@ -440,6 +445,35 @@ void CPjSipSDK::startRinging()
 	{
 		LOG4CPLUS_ERROR(log, this->getHost() << " " << "Error play ringfile :" << err.info());
 	}
+#endif
+
+    auto it_call = this->m_acc->m_calls.find(this->getCurrentCall());
+    pj::Call * call = nullptr;
+    if(it_call != this->m_acc->m_calls.end()){
+        call = it_call->second;
+    }
+    if (call) {
+        if (hasMedia) {
+            pj::CallOpParam cprm(true);
+            cprm.statusCode = PJSIP_SC_PROGRESS;
+            call->answer(cprm);
+
+            LOG4CPLUS_DEBUG(log, "hasMedia:" << call->hasMedia());
+            for (auto& media : call->getInfo().media) {
+                if (media.type == PJMEDIA_TYPE_AUDIO) {
+
+                    pj::AudioMedia* aud_med = (pj::AudioMedia*)call->getMedia(media.index);
+                    pj::AudioMedia& mic_med = pj::Endpoint::instance().audDevManager().getCaptureDevMedia();
+                    mic_med.startTransmit(*aud_med);
+                }
+            }
+        }
+        else {
+            pj::CallOpParam cprm(true);
+            cprm.statusCode = PJSIP_SC_RINGING;
+            call->answer(cprm);
+        }
+    }
 
 }
 
@@ -908,18 +942,18 @@ void CAccount::onIncomingCall(pj::OnIncomingCallParam & prm)
 {
 	pj::Call *call = new CPCall(this, prm.callId);
 
-	this->m_callsmtx.lock();
+	std::unique_lock<std::recursive_mutex >lck(this->m_callsmtx);
 	for (auto & precall : this->m_calls) {
 		precall.second->hangup(true);
 	}
 	this->m_calls[prm.callId] = call;
-	this->m_callsmtx.unlock();
+    lck.unlock();
 
-	pj::CallOpParam cprm(true);
-	cprm.statusCode = PJSIP_SC_RINGING;
-	call->answer(cprm);
+	//pj::CallOpParam cprm(true);
+	//cprm.statusCode = PJSIP_SC_RINGING;
+	//call->answer(cprm);
 
-	m_Plugin->onIncomingCall(call);
+	//m_Plugin->onIncomingCall(call);
 }
 
 void CAccount::makeCall(const std::string & strCalled, pj::Call ** pcall)
@@ -929,8 +963,7 @@ void CAccount::makeCall(const std::string & strCalled, pj::Call ** pcall)
 	pj::CallOpParam prm(true);
 	prm.opt.audioCount = 1;
 	call->makeCall(strCalled, prm);
-	this->m_callsmtx.lock();
+    std::unique_lock<std::recursive_mutex >lck(this->m_callsmtx);
 	this->m_calls[call->getId()] = call;
-	this->m_callsmtx.unlock();
 	return;
 }
