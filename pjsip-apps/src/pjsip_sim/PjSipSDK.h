@@ -16,7 +16,7 @@ public:
 	virtual void onDtmfDigit(pjsua_call_id call_id, const std::string & dtmf);
 	virtual void onIncomingCall(pj::OnIncomingCallParam &prm) override;
 
-	void makeCall(const std::string & strCalled, pj::Call ** call);
+	void makeCall(const pj::SipHeaderVector headers, const std::string & strCalled, pj::Call ** call);
 private:
 	log4cplus::Logger log;
 	class CPjSipSDK * m_Plugin = nullptr;
@@ -82,7 +82,7 @@ public:
 	void startRinging(bool hasMedia);
 	void stopRinging();
 	int Login(std::string server, long port, std::string domain, std::string utf8voipId, std::string utf8voipPwd);
-	std::string makeCall(std::string strCalled);
+	std::string makeCall(const pj::SipHeaderVector headers, std::string strCalled);
 	int acceptCall(int callid);
 	int rejectCall(int callid, int reason);
 	int pauseCall(int callid);

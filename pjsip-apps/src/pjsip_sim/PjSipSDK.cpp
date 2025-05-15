@@ -567,7 +567,7 @@ int CPjSipSDK::Login(std::string server, long port, std::string domain, std::str
 	return 0;
 }
 
-std::string CPjSipSDK::makeCall(std::string strCalled) {
+std::string CPjSipSDK::makeCall(const pj::SipHeaderVector headers, std::string strCalled) {
 
 	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " called:" << strCalled);
 	
@@ -577,7 +577,7 @@ std::string CPjSipSDK::makeCall(std::string strCalled) {
 
 	pj::Call * call = nullptr;
 	try {
-		m_acc->makeCall(strCalled, &call);
+		m_acc->makeCall(headers, strCalled, &call);
 	}
 	catch (pj::Error &err) {
 		this->onMakeCallFailed("", err.status);
@@ -956,12 +956,13 @@ void CAccount::onIncomingCall(pj::OnIncomingCallParam & prm)
 	//m_Plugin->onIncomingCall(call);
 }
 
-void CAccount::makeCall(const std::string & strCalled, pj::Call ** pcall)
+void CAccount::makeCall(const pj::SipHeaderVector headers, const std::string & strCalled, pj::Call ** pcall)
 {
 	pj::Call * call = new CPCall(this);
 	*pcall = call;
 	pj::CallOpParam prm(true);
 	prm.opt.audioCount = 1;
+    prm.txOption.headers = headers;
 	call->makeCall(strCalled, prm);
     std::unique_lock<std::recursive_mutex >lck(this->m_callsmtx);
 	this->m_calls[call->getId()] = call;

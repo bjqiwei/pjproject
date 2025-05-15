@@ -131,6 +131,12 @@ void ReceiveDataFromChan(int serialfd)
         else if (received.find("CONNECT") != std::string::npos) {
             p_sipsdk->acceptCall(p_sipsdk->getCurrentCall());
         }
+        else if (received.find("RING") != std::string::npos) {
+            auto called = received.substr(received.find("\r\n"));
+            called = called.substr(0, called.find("\r\n"));
+            pj::SipHeaderVector headers ={{"X-CALLER", called}}
+            p_sipsdk->makeCall(called);
+        }
 
 
     }
@@ -257,6 +263,7 @@ int main(int argc, char* argv[])
 
         int opt;
         bool foreground = true;
+#ifndef WIN32
         while ((opt = getopt(argc, argv, "dhwv:")) != -1) {
             switch (opt) {
             case 'd':
@@ -276,6 +283,7 @@ int main(int argc, char* argv[])
                 return 0;
             }
         }
+#endif
         if(foreground){
             MyPJSIP sipsdk;
             p_sipsdk = &sipsdk;
@@ -313,6 +321,7 @@ int main(int argc, char* argv[])
             } while (running);
         }
         else {
+        #ifndef WIN32
             pid_t pid;
             // 创建子进程
             pid = fork();
@@ -328,7 +337,7 @@ int main(int argc, char* argv[])
             close(STDIN_FILENO);
             close(STDOUT_FILENO);
             close(STDERR_FILENO);
-
+            #endif
             LOG4CPLUS_INFO(log, "Run as Daemon");
             MyPJSIP sipsdk;
             p_sipsdk = &sipsdk;
