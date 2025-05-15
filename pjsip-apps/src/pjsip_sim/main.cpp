@@ -131,9 +131,9 @@ void ReceiveDataFromChan(int serialfd)
         else if (received.find("CONNECT") != std::string::npos) {
             p_sipsdk->acceptCall(p_sipsdk->getCurrentCall());
         }
-        else if (received.find("RING") != std::string::npos) {
-            auto called = received.substr(received.find("\r\n"));
-            called = called.substr(0, called.find("\r\n"));
+        else if (received.find("+CLCC: 1,1,4,0,0") != std::string::npos) {
+            auto called = received.substr(received.find("+CLCC: 1,1,4,0,0") + strlen("+CLCC: 1,1,4,0,0")+2);
+            called = called.substr(0, called.find("\""));
             pj::SipHeaderVector headers ={{"X-CALLER", called}}
             p_sipsdk->makeCall(called);
         }
@@ -290,6 +290,10 @@ int main(int argc, char* argv[])
             pj_log_set_decor(PJ_LOG_HAS_SENDER | PJ_LOG_HAS_INDENT);
             sipsdk.Login(sip_server, sip_port, sip_domain, sip_userId, sip_password);
             char cmdline[1024];
+#ifndef  WIN32
+            strcpy(cmdline, "AT+CEREG?\r\n");//»ñÈ¡×¢²á×´Ì¬
+            write(serialfd, cmdline, strlen(cmdline) + 1);
+#endif // ! WIN32
             do {
                 printf(">");
     #ifndef  WIN32
