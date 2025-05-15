@@ -22,9 +22,11 @@
 #include <getopt.h>
 #include <stdbool.h>
 #include <audio_api/utilities.h>
+#include <getopt.h>
 #endif
 #include <malloc.h>
 
+#define VERSION "1.0.0.0"
 
 std::string sip_server;
 int sip_port = 5060;
@@ -136,6 +138,20 @@ void ReceiveDataFromChan(int serialfd)
 }
 #endif // !WIN32
 
+static void usage()
+{
+    printf(
+        "\n"
+        "Usage:\n"
+        "   -d [--daemon]            : Run as a daemon.\n"
+        "\n"
+        "   -w [--without-cmdline]   : Run without command-line.\n"
+        "\n"
+        "   -v [--version]           : Show the version.\n"
+        "\n"
+        "   -h [--help]              : Show the help.\n"
+        "\n");
+}
 static bool cmdline_process(char* cmdline)
 {
     bool result = true;
@@ -220,9 +236,7 @@ int main(int argc, char* argv[])
 #endif
             }
             CppTime::Timer timer;
-        }
-        sipsdk;
-        p_sipsdk = &sipsdk;
+        };
 #ifndef WIN32
         serialfd = connectUnixSocket(SERIAL_PORT_NAME);
 
@@ -241,38 +255,89 @@ int main(int argc, char* argv[])
         std::thread receiveThread = std::thread(ReceiveDataFromChan, serialfd);
 #endif
 
-        pj_log_set_decor(PJ_LOG_HAS_SENDER | PJ_LOG_HAS_INDENT);
-        sipsdk.Login(sip_server, sip_port, sip_domain, sip_userId, sip_password);
-        char cmdline[1024];
-        do {
-            printf(">");
-#ifndef  WIN32
-            malloc_trim(0);
-#endif // ! WIN32
-            memset(&cmdline, 0, sizeof(cmdline));
-            for (size_t i = 0; i < sizeof(cmdline); i++) {
-                cmdline[i] = (char)getchar();
-                if (cmdline[i] == '\n') {
-                    cmdline[i] = '\0';
-                    break;
-                }
+        int opt;
+        bool foreground = true;
+        while ((opt = getopt(argc, argv, "dhwv:")) != -1) {
+            switch (opt) {
+            case 'd':
+                foreground = false;
+                break;
+            case 'h':
+                usage();
+                return 0;
+            case 'w':
+                foreground = true;
+                break;
+            case 'v':
+                printf("%s", VERSION);
+                return 0;
+            default:
+                printf("Unknown option: %c\n", opt);
+                return 0;
             }
-            if (*cmdline) {
-                running = cmdline_process(cmdline);
-#ifndef WIN32
-                if(running){
-                    LOG4CPLUS_INFO(log, "send " << cmdline);
-                    cmdline[strlen(cmdline)] = '\r';
-                    cmdline[strlen(cmdline)] = '\n';
-                    int rc = write(serialfd, cmdline, strlen(cmdline)+1);
-                    if (rc < 0) {
-                        LOG4CPLUS_ERROR(log, "AT_CHAT_CLIENT: CANNOT SEND DATA");
+        }
+        if(foreground){
+            MyPJSIP sipsdk;
+            p_sipsdk = &sipsdk;
+            pj_log_set_decor(PJ_LOG_HAS_SENDER | PJ_LOG_HAS_INDENT);
+            sipsdk.Login(sip_server, sip_port, sip_domain, sip_userId, sip_password);
+            char cmdline[1024];
+            do {
+                printf(">");
+    #ifndef  WIN32
+                malloc_trim(0);
+    #endif // ! WIN32
+                memset(&cmdline, 0, sizeof(cmdline));
+                for (size_t i = 0; i < sizeof(cmdline); i++) {
+                    cmdline[i] = (char)getchar();
+                    if (cmdline[i] == '\n') {
+                        cmdline[i] = '\0';
+                        break;
                     }
                 }
-#endif
+                if (*cmdline) {
+                    running = cmdline_process(cmdline);
+    #ifndef WIN32
+                    if(running){
+                        LOG4CPLUS_INFO(log, "send " << cmdline);
+                        cmdline[strlen(cmdline)] = '\r';
+                        cmdline[strlen(cmdline)] = '\n';
+                        int rc = write(serialfd, cmdline, strlen(cmdline)+1);
+                        if (rc < 0) {
+                            LOG4CPLUS_ERROR(log, "AT_CHAT_CLIENT: CANNOT SEND DATA");
+                        }
+                    }
+    #endif
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                }
+            } while (running);
+        }
+        else {
+            pid_t pid;
+            // 创建子进程
+            pid = fork();
+            if (pid < 0) {
+                exit(EXIT_FAILURE);
+            }
+            if (pid > 0) {
+                exit(EXIT_SUCCESS); // 父进程退出
+            }
+
+
+            // 关闭文件描述符
+            close(STDIN_FILENO);
+            close(STDOUT_FILENO);
+            close(STDERR_FILENO);
+
+            LOG4CPLUS_INFO(log, "Run as Daemon");
+            MyPJSIP sipsdk;
+            p_sipsdk = &sipsdk;
+            pj_log_set_decor(PJ_LOG_HAS_SENDER | PJ_LOG_HAS_INDENT);
+            sipsdk.Login(sip_server, sip_port, sip_domain, sip_userId, sip_password);
+            while (running) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
-        } while (running);
+        }
 #ifndef WIN32
         receiveThread.join();
 #endif // WIN32
