@@ -591,6 +591,25 @@ std::string CPjSipSDK::makeCall(const pj::SipHeaderVector headers, std::string s
 	return std::to_string(m_callid);
 }
 
+int CPjSipSDK::sendIM(const std::string& content)
+{
+
+    LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " content:" << content);
+
+
+    pj::Call* call = nullptr;
+    try {
+        m_acc->sendIM(content &call);
+    }
+    catch (pj::Error& err) {
+        LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
+        return 0;
+    }
+
+    LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " callid:" << m_callid);
+    return m_callid;
+}
+
 int CPjSipSDK::acceptCall(int callid) {
 	pj::Call * call = pj::Call::lookup(callid);
 	pj_status_t status = PJ_SUCCESS;
@@ -967,4 +986,13 @@ void CAccount::makeCall(const pj::SipHeaderVector headers, const std::string & s
     std::unique_lock<std::recursive_mutex >lck(this->m_callsmtx);
 	this->m_calls[call->getId()] = call;
 	return;
+}
+
+void CAccount::sendIM(const std::string& content, pj::Call** pcall)
+{
+    pj::Call* call = new CPCall(this);
+    pj::SendInstantMessageParam imParam;
+    imParam.content = content;
+    call->sendInstantMessage(imParam);
+    return;
 }
