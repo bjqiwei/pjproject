@@ -92,15 +92,16 @@ static void sigterm_handler(int signo)
 
 CPjSipSDK* p_sipsdk = nullptr;
 int serialfd = 0;
-#ifndef WIN32
+
 void ReceiveDataFromChan(int serialfd)
 {
+    log4cplus::Logger log = log4cplus::Logger::getInstance("ReceiveDataFromChan");
+    LOG4CPLUS_INFO(log, "ReceiveDataFromChan Start");
+#ifndef WIN32
     //pthread_detach(pthread_self());
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-    log4cplus::Logger log = log4cplus::Logger::getInstance("ReceiveDataFromChan");
-    LOG4CPLUS_INFO(log, "ReceiveDataFromChan Start");
     if (!pj::Endpoint::instance().libIsThreadRegistered()) {
         pj::Endpoint::instance().libRegisterThread("ReceiveDataFromChan");
     }
@@ -140,9 +141,10 @@ void ReceiveDataFromChan(int serialfd)
 
 
     }
+#endif // !WIN32
     LOG4CPLUS_INFO(log, "ReceiveDataFromChan end");
 }
-#endif // !WIN32
+
 
 static void usage()
 {
@@ -182,9 +184,6 @@ static bool cmdline_process(char* cmdline)
 int main(int argc, char* argv[])
 {
     log4cplus::initialize();
-    log4cplus::ConfigureAndWatchThread logconfig("log4cplus.properties", 10 * 1000);
-    log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
-    loadconfig();
 
     {
         running = true;
@@ -202,7 +201,7 @@ int main(int argc, char* argv[])
         pj_log_set_level(1);
         class MyPJSIP : public CPjSipSDK{
         public:
-            MyPJSIP(){};
+            MyPJSIP(){ log = log4cplus::Logger::getInstance("pjsip"); };
             ~MyPJSIP(){};
             void onRegisterError(int reason, const char* desc) override {
                 LOG4CPLUS_ERROR(log, reason << " " << desc << " " << "onRegisterError ");
@@ -222,7 +221,7 @@ int main(int argc, char* argv[])
 
                 LOG4CPLUS_INFO(log, prm.rdata.srcAddress << " " << "onRegistered ");
             }
-            void onIncomingCallReceived(int callType, const char* callid, const char* caller, const char * called)  //ÓÐºô½ÐºôÈë
+            void onIncomingCallReceived(int callType, const char* callid, const char* caller, const char * called)  //ï¿½Ðºï¿½Ðºï¿½ï¿½ï¿½
             {
                 LOG4CPLUS_INFO(log, "onIncomingCallReceived callType:" << callType << " callid:" << callid << " caller:" << caller << " called:" << called);
 #ifndef WIN32
@@ -232,7 +231,7 @@ int main(int argc, char* argv[])
 #endif
             }
 
-            void onCallReleased(const char* callid, int reason)				//ºô½Ð¹Ò»ú
+            void onCallReleased(const char* callid, int reason)				//ï¿½ï¿½Ð¹Ò»ï¿½
             {
                 LOG4CPLUS_INFO(log, "onCallReleased " << callid);
 #ifndef WIN32
@@ -242,29 +241,13 @@ int main(int argc, char* argv[])
 #endif
             }
             CppTime::Timer timer;
+            log4cplus::Logger log;
         };
-#ifndef WIN32
-        serialfd = connectUnixSocket(SERIAL_PORT_NAME);
-
-        if (serialfd < 0) {
-            LOG4CPLUS_ERROR(log, "ERROR: OPENING DEVICE: " << SERIAL_PORT_NAME);
-            return 1;
-        }
-        else {
-            LOG4CPLUS_INFO(log, "open socket:" << SERIAL_PORT_NAME);
-        }
-
-        fcntl(serialfd, F_SETFL, O_NONBLOCK);
-
-        tcflush(serialfd, TCIFLUSH);
-
-        std::thread receiveThread = std::thread(ReceiveDataFromChan, serialfd);
-#endif
-
-        int opt;
+        std::thread* receiveThread = nullptr;
+        int opt = 0;
         bool foreground = true;
-#ifndef WIN32
-        while ((opt = getopt(argc, argv, "dhwv:")) != -1) {
+        while ((opt = getopt(argc, argv, "dhwv")) != -1) 
+        {
             switch (opt) {
             case 'd':
                 foreground = false;
@@ -285,13 +268,32 @@ int main(int argc, char* argv[])
         }
 #endif
         if(foreground){
+            log4cplus::ConfigureAndWatchThread logconfig("log4cplus.properties", 10 * 1000);
+            log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
+            loadconfig();
+#ifndef WIN32
+            serialfd = connectUnixSocket(SERIAL_PORT_NAME);
+
+            if (serialfd < 0) {
+                LOG4CPLUS_ERROR(log, "ERROR: OPENING DEVICE: " << SERIAL_PORT_NAME);
+                return 1;
+            }
+            else {
+                LOG4CPLUS_INFO(log, "open socket:" << SERIAL_PORT_NAME);
+            }
+
+            fcntl(serialfd, F_SETFL, O_NONBLOCK);
+
+            tcflush(serialfd, TCIFLUSH);
+#endif
             MyPJSIP sipsdk;
             p_sipsdk = &sipsdk;
+            receiveThread = new std::thread(ReceiveDataFromChan, serialfd);
             pj_log_set_decor(PJ_LOG_HAS_SENDER | PJ_LOG_HAS_INDENT);
             sipsdk.Login(sip_server, sip_port, sip_domain, sip_userId, sip_password);
             char cmdline[1024];
 #ifndef  WIN32
-            strcpy(cmdline, "AT+CEREG?\r\n");//»ñÈ¡×¢²á×´Ì¬
+            strcpy(cmdline, "AT+CEREG?\r\n");//ï¿½ï¿½È¡×¢ï¿½ï¿½×´Ì¬
             write(serialfd, cmdline, strlen(cmdline) + 1);
 #endif // ! WIN32
             do {
@@ -327,33 +329,50 @@ int main(int argc, char* argv[])
         else {
         #ifndef WIN32
             pid_t pid;
-            // ´´½¨×Ó½ø³Ì
+            // ï¿½ï¿½ï¿½ï¿½ï¿½Ó½ï¿½ï¿½ï¿½
             pid = fork();
             if (pid < 0) {
                 exit(EXIT_FAILURE);
             }
             if (pid > 0) {
-                exit(EXIT_SUCCESS); // ¸¸½ø³ÌÍË³ö
+                exit(EXIT_SUCCESS); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë³ï¿½
             }
 
 
-            // ¹Ø±ÕÎÄ¼þÃèÊö·û
+            // ï¿½Ø±ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             close(STDIN_FILENO);
             close(STDOUT_FILENO);
             close(STDERR_FILENO);
-            #endif
+
+            log4cplus::ConfigureAndWatchThread logconfig("log4cplus.properties", 10 * 1000);
+            log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
+            loadconfig();
             LOG4CPLUS_INFO(log, "Run as Daemon");
+#ifndef WIN32
+            serialfd = connectUnixSocket(SERIAL_PORT_NAME);
+
+            if (serialfd < 0) {
+                LOG4CPLUS_ERROR(log, "ERROR: OPENING DEVICE: " << SERIAL_PORT_NAME);
+                return 1;
+            }
+            else {
+                LOG4CPLUS_INFO(log, "open socket:" << SERIAL_PORT_NAME);
+            }
+
+            fcntl(serialfd, F_SETFL, O_NONBLOCK);
+
+            tcflush(serialfd, TCIFLUSH);
+#endif
             MyPJSIP sipsdk;
             p_sipsdk = &sipsdk;
+            receiveThread = new std::thread(ReceiveDataFromChan, serialfd);
             pj_log_set_decor(PJ_LOG_HAS_SENDER | PJ_LOG_HAS_INDENT);
             sipsdk.Login(sip_server, sip_port, sip_domain, sip_userId, sip_password);
             while (running) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
         }
-#ifndef WIN32
-        receiveThread.join();
-#endif // WIN32
+        receiveThread->join();
     }
     
     log4cplus::deinitialize();
