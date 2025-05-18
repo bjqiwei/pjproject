@@ -101,19 +101,22 @@ void ReceiveDataFromChan(int serialfd)
     //pthread_detach(pthread_self());
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
+#endif
     if (!pj::Endpoint::instance().libIsThreadRegistered()) {
         pj::Endpoint::instance().libRegisterThread("ReceiveDataFromChan");
     }
-    int BUFFSIZE = 512;
+    const int BUFFSIZE = 512;
     char buffer[BUFFSIZE];
 
     while (running) {
-
+    #ifndef WIN32
         int bytes = read(serialfd, buffer, BUFFSIZE - 1);
+    #else
+        int bytes = recv(serialfd, buffer, BUFFSIZE - 1, 0);
+    #endif
 
         if (bytes < 1) {
-            usleep(1);
+            std::this_thread::sleep_for(std::chrono::seconds(1));
             continue;
         }
 
@@ -133,15 +136,17 @@ void ReceiveDataFromChan(int serialfd)
             p_sipsdk->acceptCall(p_sipsdk->getCurrentCall());
         }
         else if (received.find("+CLCC: 1,1,4,0,0") != std::string::npos) {
-            auto called = received.substr(received.find("+CLCC: 1,1,4,0,0") + strlen("+CLCC: 1,1,4,0,0")+2);
-            called = called.substr(0, called.find("\""));
-            pj::SipHeaderVector headers ={{"X-CALLER", called}}
-            p_sipsdk->makeCall(called);
+            auto caller = received.substr(received.find("+CLCC: 1,1,4,0,0") + strlen("+CLCC: 1,1,4,0,0")+2);
+            caller = caller.substr(0, caller.find("\""));
+            pj::SipHeader h;
+            h.hName ="X-Real-Caller-Number";
+            h.hValue = caller;
+            pj::SipHeaderVector headers ={h};
+            p_sipsdk->makeCall(headers, sip_userId);
         }
 
 
     }
-#endif // !WIN32
     LOG4CPLUS_INFO(log, "ReceiveDataFromChan end");
 }
 
@@ -224,29 +229,48 @@ int main(int argc, char* argv[])
             void onIncomingCallReceived(int callType, const char* callid, const char* caller, const char * called)  //�к�к���
             {
                 LOG4CPLUS_INFO(log, "onIncomingCallReceived callType:" << callType << " callid:" << callid << " caller:" << caller << " called:" << called);
+                std::string atcmd = std::string("atd") + called + ";" + "\r\n";
+                LOG4CPLUS_INFO(log, "send " << atcmd);
 #ifndef WIN32
-                std::string atcmd = std::string("atd") + called+";" + "\r\n";
+
                 int rc = write(serialfd, atcmd.data(), atcmd.size());
-                LOG4CPLUS_INFO(log,  "send " << atcmd);
-#endif
+#else
+                int rc = ::send((SOCKET)serialfd, atcmd.data(), atcmd.size(), 0);
+#endif // !WIN32
             }
 
             void onCallReleased(const char* callid, int reason)				//��йһ�
             {
                 LOG4CPLUS_INFO(log, "onCallReleased " << callid);
-#ifndef WIN32
                 std::string atcmd = std::string("ATH") + "\r\n";
-                int rc = write(serialfd, atcmd.data(), atcmd.size());
                 LOG4CPLUS_INFO(log, "send " << atcmd);
+#ifndef WIN32
+                int rc = write(serialfd, atcmd.data(), atcmd.size());
+#else
+                int rc = ::send(serialfd, atcmd.data(), atcmd.size(), 0);
 #endif
             }
+            void onCallAnswered(const char* callid)			//外呼对方应答
+            {
+                LOG4CPLUS_INFO(log, "onCallAnswered " << callid);
+                std::string atcmd = std::string("ATA") + "\r\n";
+                LOG4CPLUS_INFO(log, "send " << atcmd);
+#ifndef WIN32
+                int rc = write(serialfd, atcmd.data(), atcmd.size());
+#else
+                int rc = ::send(serialfd, atcmd.data(), atcmd.size(), 0);
+#endif
+            }
+
             CppTime::Timer timer;
             log4cplus::Logger log;
         };
         std::thread* receiveThread = nullptr;
         int opt = 0;
         bool foreground = true;
+#ifndef WIN32
         while ((opt = getopt(argc, argv, "dhwv")) != -1) 
+#endif // !WIN32
         {
             switch (opt) {
             case 'd':
@@ -266,7 +290,6 @@ int main(int argc, char* argv[])
                 return 0;
             }
         }
-#endif
         if(foreground){
             log4cplus::ConfigureAndWatchThread logconfig("log4cplus.properties", 10 * 1000);
             log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
@@ -343,7 +366,7 @@ int main(int argc, char* argv[])
             close(STDIN_FILENO);
             close(STDOUT_FILENO);
             close(STDERR_FILENO);
-
+            #endif
             log4cplus::ConfigureAndWatchThread logconfig("log4cplus.properties", 10 * 1000);
             log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
             loadconfig();

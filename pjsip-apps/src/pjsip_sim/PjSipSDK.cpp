@@ -599,7 +599,7 @@ int CPjSipSDK::sendIM(const std::string& content)
 
     pj::Call* call = nullptr;
     try {
-        m_acc->sendIM(content &call);
+        m_acc->sendIM(content, &call);
     }
     catch (pj::Error& err) {
         LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
