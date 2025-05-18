@@ -1,0 +1,10 @@
+Linux:
+	./Configure linux-x86_64 --prefix=$(realpath ..) -fno-common -ffunction-sections -fdata-sections && make install
+openEuler:
+	./Configure linux-x86_64 --prefix=$(realpath ..) -fno-common -ffunction-sections -fdata-sections && make install
+Windows
+	>perl Configure VC-WIN64A no-shared no-tests --debug -D_WIN32_WINNT=_WIN32_WINNT_WIN10 --prefix=%cd%\..\openssl-1.1.1h-build\windows  --openssldir=%cd%\..\openssl-1.1.1h-build\windows && nmake -f makefile install
+	>perl Configure VC-WIN64A no-shared no-tests --release -D_WIN32_WINNT=_WIN32_WINNT_WIN10 --prefix=%cd%\..\openssl-1.1.1h-build\windows  --openssldir=%cd%\..\openssl-1.1.1h-build\windows && nmake -f makefile install
+	
+	>perl Configure VC-WIN32 no-shared no-tests --debug -D_WIN32_WINNT=_WIN32_WINNT_WIN10 --prefix=%cd%\..\openssl-1.1.1h-build\windows  --openssldir=%cd%\..\openssl-1.1.1h-build\windows && nmake -f makefile install
+	>perl Configure VC-WIN32 no-shared no-tests --release -D_WIN32_WINNT=_WIN32_WINNT_WIN10 --prefix=%cd%\..\openssl-1.1.1h-build\windows --openssldir=%cd%\..\openssl-1.1.1h-build\windows && nmake -f makefile install

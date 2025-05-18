@@ -6,7 +6,7 @@
 
 /* $Header: /tmp_amd/presto/export/kbs/jutta/src/gsm/RCS/code.c,v 1.3 1996/07/02 09:59:05 jutta Exp $ */
 
-#include	"config.h"
+#include	"../../build/gsm/config.h"
 
 
 #ifdef	HAS_STDLIB_H

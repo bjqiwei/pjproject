@@ -91,3 +91,4 @@ pjsip-apps/src/pjsua/winrt/gui/uwp/Voip/obj
 pjsip-apps/src/swig/csharp/sample/SimplePjsua2CS/obj/Debug
 pjsip-apps/src/pjsua/winrt/gui/uwp/VoipTasks/obj/ARM/Debug
 pjsip-apps/src/pjsua/winrt/cli/uwp/obj/ARM/Debug
+third_party/openssl-1.1.1h

@@ -1054,7 +1054,7 @@
  * Default: 0 (for now)
  */
 #ifndef PJ_HAS_SSL_SOCK
-#  define PJ_HAS_SSL_SOCK           0
+#  define PJ_HAS_SSL_SOCK           1
 #endif
 
 
