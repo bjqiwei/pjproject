@@ -1,0 +1,9 @@
+windows:
+	mkdir -p zlib-1.2.13-build\windows && cd zlib-1.2.13-build\windows
+	cmake ..\..\zlib-1.2.13 -B . --fresh -G "Visual Studio 16 2019" -A x64 -DCMAKE_INSTALL_PREFIX=. -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS_RELEASE="/MT /O1 /Ob1 /DNDEBUG" -DCMAKE_C_FLAGS_DEBUG="/MTd /Zi /Ob0 /Od /RTC1" -DCMAKE_VERBOSE_MAKEFILE=ON
+	
+	cmake --build . --target install --config=Release
+	cmake --build . --target install --config=Debug
+linux:
+	mkdir -p zlib-1.2.13-build/Centos && cd zlib-1.2.13-build/Centos
+	cmake ../../zlib-1.2.13 -B . --fresh -DCMAKE_INSTALL_PREFIX=$(realpath .) -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=\"-fPIC -fno-common -ffunction-sections -fdata-sections\" -DCMAKE_VERBOSE_MAKEFILE=ON && make install

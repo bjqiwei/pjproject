@@ -1,0 +1,12 @@
+windows:
+	cmake . --fresh -G "Visual Studio 16 2019" -A x64 -DBUILD_SHARED_LIBS=OFF -DCURL_STATIC_CRT=ON -DCURL_HIDDEN_SYMBOLS=ON 
+		-DCURL_DISABLE_LDAP=ON -DCURL_DISABLE_LDAPS=ON -DCMAKE_INSTALL_PREFIX=.\install 
+		-DCMAKE_USE_OPENSSL=ON -DOPENSSL_ROOT_DIR=%cd%\..\openssl-1.1.1h\install-dir 
+		-DCURL_ZLIB=ON -DZLIB_ROOT=%cd%\..\zlib-1.2.13\install
+	cmake --build . --target install --config=Release
+	cmake --build . --target install --config=Debug
+linux:
+	cmake . --fresh -DCMAKE_INSTALL_PREFIX=$(realpath ./install) -DBUILD_SHARED_LIBS=OFF -DCURL_STATIC_CRT=ON -DCURL_HIDDEN_SYMBOLS=ON \
+	-DCURL_DISABLE_LDAP=ON -DCURL_DISABLE_LDAPS=ON -DOPENSSL_USE_STATIC_LIBS=ON -DOPENSSL_ROOT_DIR=$(realpath ../openssl-1.1.1h/install) \
+	-DZLIB_USE_STATIC_LIBS=ON -DZLIB_ROOT=$(realpath ../zlib-1.2.13/install) -DCMAKE_C_FLAGS="-fPIC -fvisibility=hidden -fno-common -ffunction-sections -fdata-sections" \
+	&& make

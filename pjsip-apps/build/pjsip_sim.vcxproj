@@ -424,15 +424,15 @@
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party\log4cplus-2.1.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party\log4cplus-2.1.1\include;../../third_party/curl-7.77.0-build/windows/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderOutputFile />
       <AdditionalOptions>/UTF-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies Condition="'$(API_Family)'=='WinDesktop'">Iphlpapi.lib;dsound.lib;dxguid.lib;netapi32.lib;mswsock.lib;ws2_32.lib;odbc32.lib;odbccp32.lib;ole32.lib;user32.lib;gdi32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(API_Family)'=='WinDesktop'">Iphlpapi.lib;dsound.lib;dxguid.lib;netapi32.lib;mswsock.lib;ws2_32.lib;odbc32.lib;odbccp32.lib;ole32.lib;user32.lib;gdi32.lib;advapi32.lib;libcurl.lib;zlibstaticd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalLibraryDirectories>../../third_party/openssl-1.1.1h-build/windows/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../../third_party/openssl-1.1.1h-build/windows/lib;../../third_party/curl-7.77.0-build/windows/lib;../../third_party/zlib-1.2.13-build/windows/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /Y ..\src\pjsip_sim\log4cplus.properties $(OutDir)
@@ -487,17 +487,17 @@ xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party\log4cplus-2.1.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party\log4cplus-2.1.1\include;../../third_party/curl-7.77.0-build/windows/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderOutputFile />
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalOptions>/UTF-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies Condition="'$(API_Family)'=='WinDesktop'">Iphlpapi.lib;dsound.lib;dxguid.lib;netapi32.lib;mswsock.lib;ws2_32.lib;odbc32.lib;odbccp32.lib;ole32.lib;user32.lib;gdi32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(API_Family)'=='WinDesktop'">Iphlpapi.lib;dsound.lib;dxguid.lib;netapi32.lib;mswsock.lib;ws2_32.lib;odbc32.lib;odbccp32.lib;ole32.lib;user32.lib;gdi32.lib;advapi32.lib;libcurl.lib;zlibstaticd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>msvcrt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalLibraryDirectories>../../third_party/openssl-1.1.1h-build/windows/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../../third_party/openssl-1.1.1h-build/windows/lib;../../third_party/curl-7.77.0-build/windows/lib;../../third_party/zlib-1.2.13-build/windows/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /Y ..\src\pjsip_sim\log4cplus.properties $(OutDir)
@@ -553,16 +553,16 @@ xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party\log4cplus-2.1.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party\log4cplus-2.1.1\include;../../third_party/curl-7.77.0-build/windows/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderOutputFile />
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalOptions>/UTF-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies Condition="'$(API_Family)'=='WinDesktop'">Iphlpapi.lib;dsound.lib;dxguid.lib;netapi32.lib;mswsock.lib;ws2_32.lib;odbc32.lib;odbccp32.lib;ole32.lib;user32.lib;gdi32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(API_Family)'=='WinDesktop'">Iphlpapi.lib;dsound.lib;dxguid.lib;netapi32.lib;mswsock.lib;ws2_32.lib;odbc32.lib;odbccp32.lib;ole32.lib;user32.lib;gdi32.lib;advapi32.lib;libcurl.lib;zlibstaticd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalLibraryDirectories>../../third_party/openssl-1.1.1h-build/windows/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../../third_party/openssl-1.1.1h-build/windows/lib;../../third_party/curl-7.77.0-build/windows/lib;../../third_party/zlib-1.2.13-build/windows/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /Y ..\src\pjsip_sim\log4cplus.properties $(OutDir)
@@ -617,15 +617,15 @@ xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party\log4cplus-2.1.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party\log4cplus-2.1.1\include;../../third_party/curl-7.77.0-build/windows/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderOutputFile />
       <AdditionalOptions>/UTF-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies Condition="'$(API_Family)'=='WinDesktop'">Iphlpapi.lib;dsound.lib;dxguid.lib;netapi32.lib;mswsock.lib;ws2_32.lib;odbc32.lib;odbccp32.lib;ole32.lib;user32.lib;gdi32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(API_Family)'=='WinDesktop'">Iphlpapi.lib;dsound.lib;dxguid.lib;netapi32.lib;mswsock.lib;ws2_32.lib;odbc32.lib;odbccp32.lib;ole32.lib;user32.lib;gdi32.lib;advapi32.lib;libcurl.lib;zlibstaticd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalLibraryDirectories>../../third_party/openssl-1.1.1h-build/windows/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../../third_party/openssl-1.1.1h-build/windows/lib;../../third_party/curl-7.77.0-build/windows/lib;../../third_party/zlib-1.2.13-build/windows/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /Y ..\src\pjsip_sim\log4cplus.properties $(OutDir)
@@ -679,16 +679,16 @@ xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party\log4cplus-2.1.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party\log4cplus-2.1.1\include;../../third_party/curl-7.77.0-build/windows/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderOutputFile />
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalOptions>/UTF-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies Condition="'$(API_Family)'=='WinDesktop'">Iphlpapi.lib;dsound.lib;dxguid.lib;netapi32.lib;mswsock.lib;ws2_32.lib;odbc32.lib;odbccp32.lib;ole32.lib;user32.lib;gdi32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(API_Family)'=='WinDesktop'">Iphlpapi.lib;dsound.lib;dxguid.lib;netapi32.lib;mswsock.lib;ws2_32.lib;odbc32.lib;odbccp32.lib;ole32.lib;user32.lib;gdi32.lib;advapi32.lib;libcurl.lib;zlibstaticd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalLibraryDirectories>../../third_party/openssl-1.1.1h-build/windows/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../../third_party/openssl-1.1.1h-build/windows/lib;../../third_party/curl-7.77.0-build/windows/lib;../../third_party/zlib-1.2.13-build/windows/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /Y ..\src\pjsip_sim\log4cplus.properties $(OutDir)
@@ -743,15 +743,15 @@ xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party\log4cplus-2.1.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party\log4cplus-2.1.1\include;../../third_party/curl-7.77.0-build/windows/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderOutputFile />
       <AdditionalOptions>/UTF-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies Condition="'$(API_Family)'=='WinDesktop'">Iphlpapi.lib;dsound.lib;dxguid.lib;netapi32.lib;mswsock.lib;ws2_32.lib;odbc32.lib;odbccp32.lib;ole32.lib;user32.lib;gdi32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(API_Family)'=='WinDesktop'">Iphlpapi.lib;dsound.lib;dxguid.lib;netapi32.lib;mswsock.lib;ws2_32.lib;odbc32.lib;odbccp32.lib;ole32.lib;user32.lib;gdi32.lib;advapi32.lib;libcurl.lib;zlibstaticd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalLibraryDirectories>../../third_party/openssl-1.1.1h-build/windows/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../../third_party/openssl-1.1.1h-build/windows/lib;../../third_party/curl-7.77.0-build/windows/lib;../../third_party/zlib-1.2.13-build/windows/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /Y ..\src\pjsip_sim\log4cplus.properties $(OutDir)
@@ -785,10 +785,12 @@ xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\pjsip_sim\cpptimer.h" />
+    <ClInclude Include="..\src\pjsip_sim\httpclient.h" />
     <ClInclude Include="..\src\pjsip_sim\PjSipSDK.h" />
     <ClInclude Include="..\src\pjsip_sim\tinyxml2.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\pjsip_sim\httpclient.cpp" />
     <ClCompile Include="..\src\pjsip_sim\main.cpp" />
     <ClCompile Include="..\src\pjsip_sim\PjSipSDK.cpp" />
     <ClCompile Include="..\src\pjsip_sim\tinyxml2.cpp" />

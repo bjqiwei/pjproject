@@ -24,6 +24,9 @@
     <ClInclude Include="..\src\pjsip_sim\tinyxml2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\pjsip_sim\httpclient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\pjsip_sim\main.cpp">
@@ -33,6 +36,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\pjsip_sim\tinyxml2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\pjsip_sim\httpclient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

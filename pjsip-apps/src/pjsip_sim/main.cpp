@@ -25,6 +25,9 @@
 #include <getopt.h>
 #endif
 #include <malloc.h>
+#include "httpclient.h"
+#include "stringHelper.h"
+#include <pjlib-util/json.h>
 
 #define VERSION "1.0.0.0"
 
@@ -83,6 +86,48 @@ void loadconfig()
         }
     }
 
+}
+
+void httpconfig()
+{
+    log4cplus::Logger log = log4cplus::Logger::getInstance("Http");
+    std::string url = "https://www.dimld.com/reg_auth_server.txt";
+    HttpClient client;
+    std::vector<std::string> headers;
+    std::string response;
+    long http_code = 0;
+    client.Get(url, response, headers, http_code);
+    LOG4CPLUS_INFO(log, url <<  " " << http_code << " response " << response);
+
+    url = helper::string::trim(response);
+    response.clear();
+    headers= {"Content-Type:application/json; charset=utf-8"};
+    std::string data = "{\"cmd\":\"getinfo\",\"mac\" : \"8301002501000720\"}";
+    client.Post(url, data, response, headers, http_code, nullptr);
+    LOG4CPLUS_INFO(log, url << " " << http_code << " response " << response);
+
+    if(http_code == 200){
+        pj_caching_pool caching_pool;
+        pj_pool_t* pool;
+        pj_json_elem* elem;
+        char* out_buf;
+        unsigned size = response.size();
+        pj_json_err_info err;
+        pj_caching_pool_init(&caching_pool, NULL, 0);
+        pool = pj_pool_create(&caching_pool.factory, "json", 1000, 1000, NULL);
+
+        elem = pj_json_parse(pool, (char *)response.c_str(), &size, &err);
+        if (elem) {
+            if (elem->type == PJ_JSON_VAL_OBJ) {
+                elem->value.children;
+            }
+        }
+
+
+
+        pj_pool_release(pool);
+        return ;
+    }
 }
 
 static void sigterm_handler(int signo)
@@ -202,7 +247,7 @@ int main(int argc, char* argv[])
 #ifdef SIGTERM
         signal(SIGTERM, sigterm_handler);
 #endif
-
+        pj_init();
         pj_log_set_level(1);
         class MyPJSIP : public CPjSipSDK{
         public:
@@ -214,7 +259,7 @@ int main(int argc, char* argv[])
                     if (!pj::Endpoint::instance().libIsThreadRegistered()){
                         pj::Endpoint::instance().libRegisterThread("timer");
                     }
-                    loadconfig();
+                    httpconfig();
                     this->Login(sip_server, sip_port, sip_domain, sip_userId, sip_password); 
                 }
                 );
@@ -266,7 +311,7 @@ int main(int argc, char* argv[])
             log4cplus::Logger log;
         };
         std::thread* receiveThread = nullptr;
-        int opt = 0;
+        int opt = 'w';
         bool foreground = true;
 #ifndef WIN32
         while ((opt = getopt(argc, argv, "dhwv")) != -1) 
@@ -287,13 +332,14 @@ int main(int argc, char* argv[])
                 return 0;
             default:
                 printf("Unknown option: %c\n", opt);
-                return 0;
+                foreground = true;
+                break;
             }
         }
         if(foreground){
             log4cplus::ConfigureAndWatchThread logconfig("log4cplus.properties", 10 * 1000);
             log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
-            loadconfig();
+            httpconfig();
 #ifndef WIN32
             serialfd = connectUnixSocket(SERIAL_PORT_NAME);
 
@@ -370,7 +416,7 @@ int main(int argc, char* argv[])
             #endif
             log4cplus::ConfigureAndWatchThread logconfig("log4cplus.properties", 10 * 1000);
             log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
-            loadconfig();
+            httpconfig();
             LOG4CPLUS_INFO(log, "Run as Daemon");
 #ifndef WIN32
             serialfd = connectUnixSocket(SERIAL_PORT_NAME);
