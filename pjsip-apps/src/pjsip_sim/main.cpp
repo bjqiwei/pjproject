@@ -316,7 +316,8 @@ int main(int argc, char* argv[])
             sipsdk.Login(sip_server, sip_port, sip_domain, sip_userId, sip_password);
             char cmdline[1024];
 #ifndef  WIN32
-            strcpy(cmdline, "AT+CEREG?\r\n");//��ȡע��״̬
+            strcpy(cmdline, "AT+CEREG?\n\r\n");//注册状态
+            LOG4CPLUS_INFO(log, "send " << cmdline);
             write(serialfd, cmdline, strlen(cmdline) + 1);
 #endif // ! WIN32
             do {
