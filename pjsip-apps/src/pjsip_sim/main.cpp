@@ -37,6 +37,7 @@ std::string sip_domain;
 std::string sip_userId;
 std::string sip_password;
 int sip_ttl = 300;
+std::string mac_id;
 static bool running;
 
 #define SERIAL_PORT_NAME        "/tmp/atcmdtest"
@@ -108,12 +109,26 @@ void loadconfig()
                 sip_password = password->GetText();
             }
         }
+
+        if (tinyxml2::XMLElement* mac = eConfig->FirstChildElement("Mac")) {
+            if (mac && mac->GetText()) {
+                mac_id = mac->GetText();
+            }
+        }
     }
 
 }
 
 void httpconfig()
 {
+    loadconfig();
+    sip_server.clear();
+    sip_userId.clear();
+    sip_password.clear();
+    sip_domain.clear();
+    sip_port = 5060;
+    sip_ttl = 300;
+
     log4cplus::Logger log = log4cplus::Logger::getInstance("Http");
     std::string url = "https://www.dimld.com/reg_auth_server.txt";
     HttpClient client;
@@ -126,7 +141,8 @@ void httpconfig()
     url = helper::string::trim(response);
     response.clear();
     headers= {"Content-Type:application/json; charset=utf-8"};
-    std::string data = "{\"cmd\":\"getinfo\",\"mac\" : \"8301002501000720\"}";
+    std::string data = "{\"cmd\":\"getinfo\",\"mac\" : \"";
+    data.append(mac_id).append("\"}");
     client.Post(url, data, response, headers, http_code, nullptr);
     LOG4CPLUS_INFO(log, url << " " << http_code << " response " << response);
 

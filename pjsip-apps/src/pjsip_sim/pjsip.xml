@@ -1,8 +1,9 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <Config>
-	<Server>123.57.237.98</Server>
-	<Port>19060</Port>
-	<Domain>123.57.237.98</Domain>
-	<UserID>13522218846</UserID>
-	<Password>2345</Password>
+	<!--Server>123.57.237.98</Server-->
+	<!--Port>19060</Port-->
+	<!--Domain>123.57.237.98</Domain-->
+	<!--UserID>13522218846</UserID-->
+	<!--Password>2345</Password-->
+	<Mac>8301002501000720</Mac>
 </Config>
