@@ -292,9 +292,9 @@ int main(int argc, char* argv[])
                 LOG4CPLUS_INFO(log, "send " << atcmd);
 #ifndef WIN32
 
-                int rc = write(serialfd, atcmd.data(), atcmd.size());
+                int rc = write(serialfd, atcmd.c_str(), atcmd.size() + 1);
 #else
-                int rc = ::send((SOCKET)serialfd, atcmd.data(), atcmd.size(), 0);
+                int rc = ::send((SOCKET)serialfd, atcmd.c_str(), atcmd.size() + 1, 0);
 #endif // !WIN32
             }
 
@@ -304,9 +304,9 @@ int main(int argc, char* argv[])
                 std::string atcmd = std::string("ATH") + "\r\n";
                 LOG4CPLUS_INFO(log, "send " << atcmd);
 #ifndef WIN32
-                int rc = write(serialfd, atcmd.data(), atcmd.size());
+                int rc = write(serialfd, atcmd.c_str(), atcmd.size() + 1);
 #else
-                int rc = ::send(serialfd, atcmd.data(), atcmd.size(), 0);
+                int rc = ::send(serialfd, atcmd.c_str(), atcmd.size() + 1, 0);
 #endif
             }
             void onCallAnswered(const char* callid)			//外呼对方应答
@@ -315,9 +315,9 @@ int main(int argc, char* argv[])
                 std::string atcmd = std::string("ATA") + "\r\n";
                 LOG4CPLUS_INFO(log, "send " << atcmd);
 #ifndef WIN32
-                int rc = write(serialfd, atcmd.data(), atcmd.size());
+                int rc = write(serialfd, atcmd.c_str(), atcmd.size() + 1);
 #else
-                int rc = ::send(serialfd, atcmd.data(), atcmd.size(), 0);
+                int rc = ::send(serialfd, atcmd.c_str(), atcmd.size() + 1, 0);
 #endif
             }
 
@@ -384,7 +384,7 @@ int main(int argc, char* argv[])
             );
             char cmdline[1024];
 #ifndef  WIN32
-            strcpy(cmdline, "AT+CEREG?\n\r\n");//注册状态
+            strcpy(cmdline, "AT+CEREG?\r\n");//注册状态
             LOG4CPLUS_INFO(log, "send " << cmdline);
             write(serialfd, cmdline, strlen(cmdline) + 1);
 #endif // ! WIN32

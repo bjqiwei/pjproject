@@ -424,7 +424,7 @@
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party/log4cplus-2.1.1/include;../../third_party/curl-7.77.0-build/windows/include;../../third_party/jsoncpp-1.9.5/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party/log4cplus-2.1.1/include;../../third_party/curl-7.77.0-build/windows/include;../../third_party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderOutputFile />
       <AdditionalOptions>/UTF-8 %(AdditionalOptions)</AdditionalOptions>
@@ -487,7 +487,7 @@ xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party/log4cplus-2.1.1/include;../../third_party/curl-7.77.0-build/windows/include;../../third_party/jsoncpp-1.9.5/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party/log4cplus-2.1.1/include;../../third_party/curl-7.77.0-build/windows/include;../../third_party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderOutputFile />
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -553,7 +553,7 @@ xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party/log4cplus-2.1.1/include;../../third_party/curl-7.77.0-build/windows/include;../../third_party/jsoncpp-1.9.5/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party/log4cplus-2.1.1/include;../../third_party/curl-7.77.0-build/windows/include;../../third_party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderOutputFile />
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -617,7 +617,7 @@ xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party/log4cplus-2.1.1/include;../../third_party/curl-7.77.0-build/windows/include;../../third_party/jsoncpp-1.9.5/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party/log4cplus-2.1.1/include;../../third_party/curl-7.77.0-build/windows/include;../../third_party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderOutputFile />
       <AdditionalOptions>/UTF-8 %(AdditionalOptions)</AdditionalOptions>
@@ -679,7 +679,7 @@ xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party/log4cplus-2.1.1/include;../../third_party/curl-7.77.0-build/windows/include;../../third_party/jsoncpp-1.9.5/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party/log4cplus-2.1.1/include;../../third_party/curl-7.77.0-build/windows/include;../../third_party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderOutputFile />
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -743,7 +743,7 @@ xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party/log4cplus-2.1.1/include;../../third_party/curl-7.77.0-build/windows/include;../../third_party/jsoncpp-1.9.5/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../pjsip/include;../../pjlib/include;../../pjlib-util/include;../../pjmedia/include;../../pjnath/include;../../third_party/log4cplus-2.1.1/include;../../third_party/curl-7.77.0-build/windows/include;../../third_party;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderOutputFile />
       <AdditionalOptions>/UTF-8 %(AdditionalOptions)</AdditionalOptions>

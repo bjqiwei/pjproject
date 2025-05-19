@@ -34,7 +34,7 @@ public:
 	virtual void onRegState(pj::OnRegStateParam &prm);//登录状态改变回调
 	virtual void onCallState(const pj::CallInfo & ci);//通话状态改变回调
 	virtual void onDtmfDigit(pjsua_call_id call_id, const std::string & dtmf);
-	virtual void onIncomingCall(pj::Call *call);
+	virtual void onIncomingCall(pj::Call *call, const std::string& wholeMsg);
 
     bool IsRegisterd(){ return m_Registerd;}
 

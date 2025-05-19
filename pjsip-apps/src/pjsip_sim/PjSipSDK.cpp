@@ -5,6 +5,7 @@
 #include <atomic>
 #include <map>
 #include <mutex>
+#include "stringHelper.h"
 #ifndef WIN32
 #include <sstream>
 namespace std {
@@ -203,7 +204,7 @@ void CPjSipSDK::onCallState(const pj::CallInfo & ci)
 		std::string caller = remote.substr(remote.find(":"), remote.find("@") - remote.find(":"));
         std::string local = ci.localUri;
         std::string called = local.substr(local.find(":") + 1, local.find("@") - local.find(":") - 1);
-		this->onIncomingCallReceived(0, std::to_string(ci.id).c_str(), caller.c_str(), called.c_str());
+		//this->onIncomingCallReceived(0, std::to_string(ci.id).c_str(), caller.c_str(), called.c_str());
 		}
 		break;
 	case PJSIP_INV_STATE_EARLY:
@@ -231,16 +232,20 @@ void CPjSipSDK::onDtmfDigit(pjsua_call_id call_id, const std::string & digit)
 }
 
 
-void CPjSipSDK::onIncomingCall(pj::Call * call)
+void CPjSipSDK::onIncomingCall(pj::Call * call, const std::string& wholeMsg)
 {
-	LOG4CPLUS_DEBUG(log, this->getHost() << " " << "Incoming call from " << call->getId());
+	LOG4CPLUS_DEBUG(log, this->getHost() << " " << "Incoming call from " << call->getId() << "  " << wholeMsg);
 
 	this->m_callid = call->getId();
 	
 	std::string remote = call->getInfo().remoteUri;
 	std::string caller = remote.substr(remote.find(":")+1, remote.find("@")- (remote.find(":")+1));
-    std::string local = call->getInfo().localUri;
-    std::string called = local.substr(local.find(":") + 1, local.find("@") - (local.find(":") - 1));
+    /*std::string local = call->getInfo().localUri;
+    std::string called = local.substr(local.find(":") + 1, local.find("@") - (local.find(":") - 1));*/
+    std::string hName = "X-Real-Called-Number:";
+    std::string called = wholeMsg.substr(wholeMsg.find(hName) + hName.size() + 1);
+    called = called.substr(0, called.find("\r\n"));
+    helper::string::trim(called);
 	//startRinging();
 	this->onIncomingCallReceived(0, std::to_string(call->getInfo().id).c_str(), caller.c_str(), called.c_str());
 }
@@ -968,12 +973,10 @@ void CAccount::onIncomingCall(pj::OnIncomingCallParam & prm)
 	}
 	this->m_calls[prm.callId] = call;
     lck.unlock();
-
 	//pj::CallOpParam cprm(true);
 	//cprm.statusCode = PJSIP_SC_RINGING;
 	//call->answer(cprm);
-
-	//m_Plugin->onIncomingCall(call);
+	m_Plugin->onIncomingCall(call, prm.rdata.wholeMsg);
 }
 
 void CAccount::makeCall(const pj::SipHeaderVector headers, const std::string & strCalled, pj::Call ** pcall)
