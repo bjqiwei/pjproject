@@ -27,7 +27,7 @@
 #include <malloc.h>
 #include "httpclient.h"
 #include "stringHelper.h"
-#include <json/json.h>
+#include <jsoncpp-1.9.5/include/json/json.h>
 
 #define VERSION "1.0.0.0"
 

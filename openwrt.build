@@ -1,6 +1,11 @@
 cd third_party/log4cplus-2.1.1 && 
 cmake  -DCMAKE_CXX_FLAGS="-pipe -march=armv7-a"  -DCMAKE_INSTALL_PREFIX=$(realpath ..)  -DBUILD_SHARED_LIBS=OFF -DENABLE_SYMBOLS_VISIBILITY=OFF -DLOG4CPLUS_ENABLE_THREAD_POOL=OFF -DWITH_UNIT_TESTS=OFF -DLOG4CPLUS_BUILD_TESTING=OFF  -DCMAKE_VERBOSE_MAKEFILE=ON && make install
 
+cd ..
+mkdir -p jsoncpp-1.9.5-build && cd jsoncpp-1.9.5-build
+cmake ../jsoncpp-1.9.5 -DCMAKE_CXX_FLAGS="-fPIC -pipe -march=armv7-a" -DBUILD_SHARED_LIBS=false -DJSONCPP_WITH_TESTS=false -DJSONCPP_WITH_POST_BUILD_UNITTEST=false -DCMAKE_VERBOSE_MAKEFILE=ON&& make
+
 cd ../..
+
 
 ./configure --host=x86_64-linux --target=armv7 -with-ssl="$CROSSTOOL_PATH/sysroots/target-arm/usr" LD=arm-openwrt-linux-uclibcgnueabi-gcc LDFLAGS="-L$CROSSTOOL_PATH/sysroots/target-arm/usr/lib -lprop2uci -laudio-apu -lcutils -lacm -llog -luci -lubox -lrilutil -lubus -ltinyalsa" && make clean && make
