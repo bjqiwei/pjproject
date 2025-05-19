@@ -58,7 +58,7 @@ export PJSIPSIM_CFLAGS += $(PJ_CFLAGS) $(CFLAGS)
 export PJSIPSIM_CXXFLAGS += $(PJ_CXXFLAGS) $(CFLAGS) -I$(LIB_PATH)/usr/include $(CC_INC)../../third_party/include $(CC_INC)../../third_party 
 export PJSIPSIM_LDFLAGS += $(PJ_LDFLAGS) $(PJ_LDLIBS) $(PJ_LDXXLIBS) $(LDFLAGS) ../../third_party/jsoncpp-1.9.5-build/lib/libjsoncpp.a -llog4cplusS -lcurl -lstdc++ -lmtel
 ifeq ($(EXCLUDE_APP),0)
-export PJSIPSIM_EXE:=pjsip-sim-$(TARGET_NAME)$(HOST_EXE)
+export PJSIPSIM_EXE:=pjsip-sim-$(TARGET_NAME)
 endif
 
 export CC_OUT CC AR RANLIB HOST_MV HOST_RM HOST_RMDIR HOST_MKDIR OBJEXT LD LDOUT 
