@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\qiwei\chilli\libs\jsoncpp-1.9.5\src\test_lib_json\jsontest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\qiwei\chilli\libs\jsoncpp-1.9.5\src\test_lib_json\fuzz.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\qiwei\chilli\libs\jsoncpp-1.9.5\src\test_lib_json\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D:\qiwei\chilli\libs\jsoncpp-1.9.5\src\test_lib_json\jsontest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\qiwei\chilli\libs\jsoncpp-1.9.5\src\test_lib_json\fuzz.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\qiwei\chilli\libs\jsoncpp-1.9.5\src\test_lib_json\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{6E324AD4-A637-3977-A224-6EEAE043106A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{A0BA8BDD-7052-3AB2-9634-8EE98FA4E55C}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,3 @@
+linux
+	>mkdir -p jsoncpp-1.9.5-build && cd jsoncpp-1.9.5-build
+	>cmake --fresh ../jsoncpp-1.9.5 -DCMAKE_CXX_FLAGS="-fPIC -pipe -march=armv7-a" -DBUILD_SHARED_LIBS=false -DJSONCPP_WITH_TESTS=false -DJSONCPP_WITH_POST_BUILD_UNITTEST=false -DCMAKE_VERBOSE_MAKEFILE=ON&& make

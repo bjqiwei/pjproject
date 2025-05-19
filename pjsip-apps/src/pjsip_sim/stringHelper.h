@@ -85,7 +85,7 @@ namespace helper
 
 		static inline std::wstring& toUpper(std::wstring& str)
 		{
-			transform(str.begin(), str.end(), str.begin(), ::toupper);
+			transform(str.begin(), str.end(), str.begin(), ::towupper);
 			return str;
 		}
 
@@ -98,7 +98,7 @@ namespace helper
 
 		static inline std::wstring& toLower(std::wstring& str)
 		{
-			transform(str.begin(), str.end(), str.begin(), ::tolower);
+			transform(str.begin(), str.end(), str.begin(), ::towlower);
 			return str;
 		}
 

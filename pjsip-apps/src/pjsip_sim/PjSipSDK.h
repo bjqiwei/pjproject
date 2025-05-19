@@ -36,6 +36,8 @@ public:
 	virtual void onDtmfDigit(pjsua_call_id call_id, const std::string & dtmf);
 	virtual void onIncomingCall(pj::Call *call);
 
+    bool IsRegisterd(){ return m_Registerd;}
+
 private:// 虚函数   
 	virtual void onRegistered(pj::OnRegStateParam& prm);					//与云通讯平台连接成功
 	virtual void onRegisterError(int reason, const char * desc);		//与云通讯平台连接断开或者出错
@@ -82,7 +84,7 @@ public:
 	void setRingFile(const std::string & ringfile);
 	void startRinging(bool hasMedia);
 	void stopRinging();
-	int Login(std::string server, long port, std::string domain, std::string utf8voipId, std::string utf8voipPwd);
+	int Login(std::string server, long port, std::string domain, std::string utf8voipId, std::string utf8voipPwd, int ttl);
 	std::string makeCall(const pj::SipHeaderVector headers, std::string strCalled);
     int sendIM(const std::string& content);
 	int acceptCall(int callid);

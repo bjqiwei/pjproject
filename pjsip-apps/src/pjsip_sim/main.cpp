@@ -27,7 +27,7 @@
 #include <malloc.h>
 #include "httpclient.h"
 #include "stringHelper.h"
-#include <pjlib-util/json.h>
+#include <json/json.h>
 
 #define VERSION "1.0.0.0"
 
@@ -36,9 +36,33 @@ int sip_port = 5060;
 std::string sip_domain;
 std::string sip_userId;
 std::string sip_password;
+int sip_ttl = 300;
 static bool running;
 
 #define SERIAL_PORT_NAME        "/tmp/atcmdtest"
+
+namespace Json{
+typedef struct JsonParsed_ {
+    bool is_success = false;
+    Json::Value json_obj;
+    std::string err_msg;
+}JsonParsed;
+
+inline bool parse(const std::string& stream, Json::Value* root, Json::String* jerr)
+{
+    Json::CharReaderBuilder builder;
+    const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+    return reader->parse(stream.c_str(), stream.c_str() + stream.length(), root, jerr);
+}
+
+inline JsonParsed parse(const std::string& stream) {
+    JsonParsed result;
+    Json::CharReaderBuilder builder;
+    const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+    result.is_success = reader->parse(stream.c_str(), stream.c_str() + stream.length(), &result.json_obj, &result.err_msg);
+    return result;
+}
+}
 
 void loadconfig()
 {
@@ -107,26 +131,25 @@ void httpconfig()
     LOG4CPLUS_INFO(log, url << " " << http_code << " response " << response);
 
     if(http_code == 200){
-        pj_caching_pool caching_pool;
-        pj_pool_t* pool;
-        pj_json_elem* elem;
-        char* out_buf;
-        unsigned size = response.size();
-        pj_json_err_info err;
-        pj_caching_pool_init(&caching_pool, NULL, 0);
-        pool = pj_pool_create(&caching_pool.factory, "json", 1000, 1000, NULL);
+        auto j_resp = Json::parse(response).json_obj;
+        if(j_resp["code"].asInt() == 0){
+            if(j_resp["data"]["ip"].isString())
+                sip_server = j_resp["data"]["ip"].asString();
 
-        elem = pj_json_parse(pool, (char *)response.c_str(), &size, &err);
-        if (elem) {
-            if (elem->type == PJ_JSON_VAL_OBJ) {
-                elem->value.children;
-            }
+            if (j_resp["data"]["port"].isInt())
+                sip_port = j_resp["data"]["port"].asInt();
+
+            if (j_resp["data"]["sip_id"].isString())
+                sip_userId = j_resp["data"]["sip_id"].asString();
+
+            if (j_resp["data"]["sip_pwd"].isString())
+                sip_password = j_resp["data"]["sip_pwd"].asString();
+
+            if (j_resp["data"]["ttl"].isInt())
+                sip_ttl = j_resp["data"]["ttl"].asInt();
+
+            sip_domain = sip_server;
         }
-
-
-
-        pj_pool_release(pool);
-        return ;
     }
 }
 
@@ -255,15 +278,6 @@ int main(int argc, char* argv[])
             ~MyPJSIP(){};
             void onRegisterError(int reason, const char* desc) override {
                 LOG4CPLUS_ERROR(log, reason << " " << desc << " " << "onRegisterError ");
-                timer.add(std::chrono::seconds(60), [=](CppTime::timer_id tid){
-                    if (!pj::Endpoint::instance().libIsThreadRegistered()){
-                        pj::Endpoint::instance().libRegisterThread("timer");
-                    }
-                    httpconfig();
-                    this->Login(sip_server, sip_port, sip_domain, sip_userId, sip_password); 
-                }
-                );
-
             }
             void onRegistered(pj::OnRegStateParam& prm) override
             {
@@ -339,7 +353,6 @@ int main(int argc, char* argv[])
         if(foreground){
             log4cplus::ConfigureAndWatchThread logconfig("log4cplus.properties", 10 * 1000);
             log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
-            httpconfig();
 #ifndef WIN32
             serialfd = connectUnixSocket(SERIAL_PORT_NAME);
 
@@ -359,7 +372,16 @@ int main(int argc, char* argv[])
             p_sipsdk = &sipsdk;
             receiveThread = new std::thread(ReceiveDataFromChan, serialfd);
             pj_log_set_decor(PJ_LOG_HAS_SENDER | PJ_LOG_HAS_INDENT);
-            sipsdk.Login(sip_server, sip_port, sip_domain, sip_userId, sip_password);
+            sipsdk.timer.add(std::chrono::seconds(1), [=](CppTime::timer_id tid) {
+                if (!pj::Endpoint::instance().libIsThreadRegistered()) {
+                    pj::Endpoint::instance().libRegisterThread("timer");
+                }
+                if (!p_sipsdk->IsRegisterd()) {
+                    httpconfig();
+                    p_sipsdk->Login(sip_server, sip_port, sip_domain, sip_userId, sip_password, sip_ttl);
+                }
+            }, std::chrono::seconds(60)
+            );
             char cmdline[1024];
 #ifndef  WIN32
             strcpy(cmdline, "AT+CEREG?\n\r\n");//注册状态
@@ -416,7 +438,6 @@ int main(int argc, char* argv[])
             #endif
             log4cplus::ConfigureAndWatchThread logconfig("log4cplus.properties", 10 * 1000);
             log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
-            httpconfig();
             LOG4CPLUS_INFO(log, "Run as Daemon");
 #ifndef WIN32
             serialfd = connectUnixSocket(SERIAL_PORT_NAME);
@@ -437,7 +458,16 @@ int main(int argc, char* argv[])
             p_sipsdk = &sipsdk;
             receiveThread = new std::thread(ReceiveDataFromChan, serialfd);
             pj_log_set_decor(PJ_LOG_HAS_SENDER | PJ_LOG_HAS_INDENT);
-            sipsdk.Login(sip_server, sip_port, sip_domain, sip_userId, sip_password);
+            sipsdk.timer.add(std::chrono::seconds(1), [=](CppTime::timer_id tid) {
+                if (!pj::Endpoint::instance().libIsThreadRegistered()) {
+                    pj::Endpoint::instance().libRegisterThread("timer");
+                }
+                if(!p_sipsdk->IsRegisterd()){
+                    httpconfig();
+                    p_sipsdk->Login(sip_server, sip_port, sip_domain, sip_userId, sip_password, sip_ttl);
+                }
+                }, std::chrono::seconds(60)
+            );
             while (running) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }

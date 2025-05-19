@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\qiwei\chilli\libs\jsoncpp-1.9.5\msvc2019\CMakeFiles\2bf3b391be2bc60c6e7e440230ac9f94\RUN_TESTS_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{5DDF194F-FED1-3F4D-9E13-ACC91936167C}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

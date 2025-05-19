@@ -495,7 +495,7 @@ void CPjSipSDK::stopRinging()
 	}
 }
 
-int CPjSipSDK::Login(std::string server, long port, std::string domain, std::string utf8voipId, std::string utf8voipPwd)
+int CPjSipSDK::Login(std::string server, long port, std::string domain, std::string utf8voipId, std::string utf8voipPwd, int ttl)
 {
 	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " server:" << server << ":"  << port << ", domin:" << domain << ",voipId:" << utf8voipId << ", pwd:" << utf8voipPwd);
 
@@ -521,6 +521,7 @@ int CPjSipSDK::Login(std::string server, long port, std::string domain, std::str
 
 	acc_cfg.idUri = "<sip:" + this->m_voipid + "@" + this->m_domain + ">";
 	acc_cfg.regConfig.registrarUri = "sip:" + this->m_domain + "";
+    acc_cfg.regConfig.timeoutSec = ttl;
 	acc_cfg.sipConfig.authCreds.push_back(pj::AuthCredInfo("Digest", "*", this->m_voipid, 0, this->m_voippwd));
 	//acc_cfg.sipConfig.authCreds.push_back(pj::AuthCredInfo("Digest", "realm=\"realm\",domain=\"sip:domain\",nonce=\"nonce\",opaque=\"opaque\",stale=true,algorithm=MD5,qop=\"auth\"", this->m_voipid, 0, this->m_voippwd));
 
