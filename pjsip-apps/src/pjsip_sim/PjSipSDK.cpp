@@ -769,7 +769,7 @@ int CPjSipSDK::releaseCall(int callid) {
 	pj_status_t status = PJ_SUCCESS;
 	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " callid:" << callid);
 
-	if (callid < 0 && this->m_acc){
+	if (callid < 0 && this->m_acc != nullptr){
 		this->m_acc->m_callsmtx.lock();
 		for (auto & call : this->m_acc->m_calls)
 		{

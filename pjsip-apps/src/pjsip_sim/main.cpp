@@ -305,7 +305,7 @@ void ReceiveDataFromChan(int serialfd)
         }
         else if (received.find("CSIM:20,\"") != std::string::npos) {
             auto deviceId = received.substr(received.find("CSIM:20,\"") + strlen("CSIM:20,\""));
-            deviceId = deviceId.substr(0, deviceId.length() -13);//移除后4为+"
+            deviceId = deviceId.substr(0, 16);//16位
             mac_id = deviceId;
             LOG4CPLUS_INFO(log, "deviceId " << mac_id);
         }
