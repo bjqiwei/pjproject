@@ -31,6 +31,12 @@
 
 #define VERSION "1.0.0.0"
 
+#ifndef WIN32
+#define WRITE(fd, buf, len) write(fd, buf, len)
+#else
+#define WRITE(fd, buf, len) ::send(fd, buf, len, 0)
+#endif // !WIN32
+
 std::string sip_server;
 int sip_port = 5060;
 std::string sip_domain;
@@ -39,7 +45,49 @@ std::string sip_password;
 int sip_ttl = 300;
 std::string mac_id;
 static bool running;
+static int serialfd = 0;
 
+class MyPJSIP : public CPjSipSDK {
+public:
+    MyPJSIP() { log = log4cplus::Logger::getInstance("pjsip"); };
+    ~MyPJSIP() {};
+    void onRegisterError(int reason, const char* desc) override {
+        LOG4CPLUS_ERROR(log, reason << " " << desc << " " << "onRegisterError ");
+    }
+    void onRegistered(pj::OnRegStateParam& prm) override
+    {
+        //this->makeCall("9000");
+
+        LOG4CPLUS_INFO(log, prm.rdata.srcAddress << " " << "onRegistered ");
+    }
+    void onIncomingCallReceived(int callType, const char* callid, const char* caller, const char* called)  //�к�к���
+    {
+        LOG4CPLUS_INFO(log, "onIncomingCallReceived callType:" << callType << " callid:" << callid << " caller:" << caller << " called:" << called);
+        std::string atcmd = std::string("atd") + called + ";" + "\r\n";
+        LOG4CPLUS_INFO(log, "send " << atcmd.size()<< " >>" << atcmd);
+        int rc = WRITE(serialfd, atcmd.c_str(), atcmd.size());
+    }
+
+    void onCallReleased(const char* callid, int reason)				//��йһ�
+    {
+        LOG4CPLUS_INFO(log, "onCallReleased " << callid);
+        std::string atcmd = std::string("ATH") + "\r\n";
+        LOG4CPLUS_INFO(log, "send " << atcmd.size() << " >>" << atcmd);
+        int rc = WRITE(serialfd, atcmd.c_str(), atcmd.size());
+    }
+    void onCallAnswered(const char* callid)			//外呼对方应答
+    {
+        LOG4CPLUS_INFO(log, "onCallAnswered " << callid);
+        std::string atcmd = std::string("ATA") + "\r\n";
+        LOG4CPLUS_INFO(log, "send " << atcmd.size() << " >>" << atcmd);
+        int rc = WRITE(serialfd, atcmd.c_str(), atcmd.size());
+    }
+
+    CppTime::Timer timer;
+    log4cplus::Logger log;
+};
+
+MyPJSIP * p_sipsdk = nullptr;
 #define SERIAL_PORT_NAME        "/tmp/atcmdtest"
 
 namespace Json{
@@ -121,7 +169,9 @@ void loadconfig()
 
 void httpconfig()
 {
+#ifdef WIN32
     loadconfig();
+#endif // WIN32
     sip_server.clear();
     sip_userId.clear();
     sip_password.clear();
@@ -144,7 +194,7 @@ void httpconfig()
     std::string data = "{\"cmd\":\"getinfo\",\"mac\" : \"";
     data.append(mac_id).append("\"}");
     client.Post(url, data, response, headers, http_code, nullptr);
-    LOG4CPLUS_INFO(log, url << " " << http_code << " response " << response);
+    LOG4CPLUS_INFO(log, url << " send >>" << data  << http_code << " response<<" << response);
 
     if(http_code == 200){
         auto j_resp = Json::parse(response).json_obj;
@@ -174,9 +224,25 @@ static void sigterm_handler(int signo)
     running = false;
 }
 
-CPjSipSDK* p_sipsdk = nullptr;
-int serialfd = 0;
+static void open_socket()
+{
+    log4cplus::Logger log = log4cplus::Logger::getInstance("open_socket");
+#ifndef WIN32
+    serialfd = connectUnixSocket(SERIAL_PORT_NAME);
 
+    if (serialfd < 0) {
+        LOG4CPLUS_ERROR(log, "ERROR: OPENING DEVICE: " << SERIAL_PORT_NAME);
+        return ;
+    }
+    else {
+        LOG4CPLUS_INFO(log, "open socket:" << SERIAL_PORT_NAME);
+    }
+
+    fcntl(serialfd, F_SETFL, O_NONBLOCK);
+
+    tcflush(serialfd, TCIFLUSH);
+#endif
+}
 void ReceiveDataFromChan(int serialfd)
 {
     log4cplus::Logger log = log4cplus::Logger::getInstance("ReceiveDataFromChan");
@@ -193,6 +259,7 @@ void ReceiveDataFromChan(int serialfd)
     char buffer[BUFFSIZE];
 
     while (running) {
+        memset(buffer,0, BUFFSIZE);
     #ifndef WIN32
         int bytes = read(serialfd, buffer, BUFFSIZE - 1);
     #else
@@ -200,6 +267,7 @@ void ReceiveDataFromChan(int serialfd)
     #endif
 
         if (bytes < 1) {
+            //LOG4CPLUS_ERROR(log, bytes << " <<" << buffer);
             std::this_thread::sleep_for(std::chrono::seconds(1));
             continue;
         }
@@ -226,10 +294,21 @@ void ReceiveDataFromChan(int serialfd)
             h.hName ="X-Real-Caller-Number";
             h.hValue = caller;
             pj::SipHeaderVector headers ={h};
-            p_sipsdk->makeCall(headers, sip_userId);
+            if(p_sipsdk->IsRegisterd()){
+                p_sipsdk->makeCall(headers, sip_userId);
+            }
+            else {
+                std::string atcmd = std::string("ATH") + "\r\n";
+                LOG4CPLUS_INFO(log, "send " << atcmd.size() << " >>" << atcmd);
+                int rc = WRITE(serialfd, atcmd.c_str(), atcmd.size());
+            }
         }
-
-
+        else if (received.find("CSIM:20,\"") != std::string::npos) {
+            auto deviceId = received.substr(received.find("CSIM:20,\"") + strlen("CSIM:20,\""));
+            deviceId = deviceId.substr(0, deviceId.length() -13);//移除后4为+"
+            mac_id = deviceId;
+            LOG4CPLUS_INFO(log, "deviceId " << mac_id);
+        }
     }
     LOG4CPLUS_INFO(log, "ReceiveDataFromChan end");
 }
@@ -269,228 +348,149 @@ static bool cmdline_process(char* cmdline)
     return result;
 }
 
+std::thread* receiveThread = nullptr;
+int start()
+{
+    log4cplus::initialize();
+    log4cplus::ConfigureAndWatchThread logconfig("log4cplus.properties", 10 * 1000);
+    log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
+    pj_init();
+    pj_log_set_level(1);
+    running = true;
+    p_sipsdk = new MyPJSIP();
+    open_socket();
+    receiveThread = new std::thread(ReceiveDataFromChan, serialfd);
+    pj_log_set_decor(PJ_LOG_HAS_SENDER | PJ_LOG_HAS_INDENT);
+    p_sipsdk->timer.add(std::chrono::seconds(5), [=](CppTime::timer_id tid) {
+        if (!pj::Endpoint::instance().libIsThreadRegistered()) {
+            pj::Endpoint::instance().libRegisterThread("timer");
+        }
+        if (!p_sipsdk->IsRegisterd()) {
+            if(!mac_id.empty()){
+                httpconfig();
+            }
+
+            if(!sip_userId.empty()){
+                p_sipsdk->Login(sip_server, sip_port, sip_domain, sip_userId, sip_password, sip_ttl);
+            }
+        }
+        }, std::chrono::seconds(10)
+    );
+    char cmdline[1024];
+    strcpy(cmdline, "AT+CEREG?\r\n");//注册状态
+    LOG4CPLUS_INFO(log, "send " << strlen(cmdline) << " >>" << cmdline);
+    WRITE(serialfd, cmdline, strlen(cmdline));
+
+    strcpy(cmdline, "AT+CPIN?\r\n");
+    LOG4CPLUS_INFO(log, "send " << strlen(cmdline) << " >>" << cmdline);
+    WRITE(serialfd, cmdline, strlen(cmdline));
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::string atcmd = "AT+CSIM=10,\"0001028208\"\r\n";//获取设备ID
+    LOG4CPLUS_INFO(log, "send " << atcmd.size() << " >>" << atcmd);
+    WRITE(serialfd, atcmd.c_str(), atcmd.size());
+    return 0;
+}
+
+void stop()
+{
+    delete p_sipsdk;
+    receiveThread->join();
+    log4cplus::deinitialize();
+}
 
 int main(int argc, char* argv[])
 {
-    log4cplus::initialize();
 
-    {
-        running = true;
-        signal(SIGINT, sigterm_handler);
+    signal(SIGINT, sigterm_handler);
 #ifdef SIGTSTP
-        signal(SIGTSTP, sigterm_handler);
+    signal(SIGTSTP, sigterm_handler);
 #endif
 #ifdef SIGQUIT
-        signal(SIGQUIT, sigterm_handler);
+    signal(SIGQUIT, sigterm_handler);
 #endif
 #ifdef SIGTERM
-        signal(SIGTERM, sigterm_handler);
+    signal(SIGTERM, sigterm_handler);
 #endif
-        pj_init();
-        pj_log_set_level(1);
-        class MyPJSIP : public CPjSipSDK{
-        public:
-            MyPJSIP(){ log = log4cplus::Logger::getInstance("pjsip"); };
-            ~MyPJSIP(){};
-            void onRegisterError(int reason, const char* desc) override {
-                LOG4CPLUS_ERROR(log, reason << " " << desc << " " << "onRegisterError ");
-            }
-            void onRegistered(pj::OnRegStateParam& prm) override
-            {
-                //this->makeCall("9000");
-
-                LOG4CPLUS_INFO(log, prm.rdata.srcAddress << " " << "onRegistered ");
-            }
-            void onIncomingCallReceived(int callType, const char* callid, const char* caller, const char * called)  //�к�к���
-            {
-                LOG4CPLUS_INFO(log, "onIncomingCallReceived callType:" << callType << " callid:" << callid << " caller:" << caller << " called:" << called);
-                std::string atcmd = std::string("atd") + called + ";" + "\r\n";
-                LOG4CPLUS_INFO(log, "send " << atcmd);
+    int opt = 'w';
+    bool foreground = true;
 #ifndef WIN32
-
-                int rc = write(serialfd, atcmd.c_str(), atcmd.size() + 1);
-#else
-                int rc = ::send((SOCKET)serialfd, atcmd.c_str(), atcmd.size() + 1, 0);
+    while ((opt = getopt(argc, argv, "dhwv")) != -1)
 #endif // !WIN32
-            }
-
-            void onCallReleased(const char* callid, int reason)				//��йһ�
-            {
-                LOG4CPLUS_INFO(log, "onCallReleased " << callid);
-                std::string atcmd = std::string("ATH") + "\r\n";
-                LOG4CPLUS_INFO(log, "send " << atcmd);
-#ifndef WIN32
-                int rc = write(serialfd, atcmd.c_str(), atcmd.size() + 1);
-#else
-                int rc = ::send(serialfd, atcmd.c_str(), atcmd.size() + 1, 0);
-#endif
-            }
-            void onCallAnswered(const char* callid)			//外呼对方应答
-            {
-                LOG4CPLUS_INFO(log, "onCallAnswered " << callid);
-                std::string atcmd = std::string("ATA") + "\r\n";
-                LOG4CPLUS_INFO(log, "send " << atcmd);
-#ifndef WIN32
-                int rc = write(serialfd, atcmd.c_str(), atcmd.size() + 1);
-#else
-                int rc = ::send(serialfd, atcmd.c_str(), atcmd.size() + 1, 0);
-#endif
-            }
-
-            CppTime::Timer timer;
-            log4cplus::Logger log;
-        };
-        std::thread* receiveThread = nullptr;
-        int opt = 'w';
-        bool foreground = true;
-#ifndef WIN32
-        while ((opt = getopt(argc, argv, "dhwv")) != -1) 
-#endif // !WIN32
-        {
-            switch (opt) {
-            case 'd':
-                foreground = false;
-                break;
-            case 'h':
-                usage();
-                return 0;
-            case 'w':
-                foreground = true;
-                break;
-            case 'v':
-                printf("%s", VERSION);
-                return 0;
-            default:
-                printf("Unknown option: %c\n", opt);
-                foreground = true;
-                break;
-            }
+    {
+        switch (opt) {
+        case 'd':
+            foreground = false;
+            break;
+        case 'h':
+            usage();
+            return 0;
+        case 'w':
+            foreground = true;
+            break;
+        case 'v':
+            printf("%s", VERSION);
+            return 0;
+        default:
+            printf("Unknown option: %c\n", opt);
+            foreground = true;
+            break;
         }
-        if(foreground){
-            log4cplus::ConfigureAndWatchThread logconfig("log4cplus.properties", 10 * 1000);
-            log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
-#ifndef WIN32
-            serialfd = connectUnixSocket(SERIAL_PORT_NAME);
-
-            if (serialfd < 0) {
-                LOG4CPLUS_ERROR(log, "ERROR: OPENING DEVICE: " << SERIAL_PORT_NAME);
-                return 1;
-            }
-            else {
-                LOG4CPLUS_INFO(log, "open socket:" << SERIAL_PORT_NAME);
-            }
-
-            fcntl(serialfd, F_SETFL, O_NONBLOCK);
-
-            tcflush(serialfd, TCIFLUSH);
-#endif
-            MyPJSIP sipsdk;
-            p_sipsdk = &sipsdk;
-            receiveThread = new std::thread(ReceiveDataFromChan, serialfd);
-            pj_log_set_decor(PJ_LOG_HAS_SENDER | PJ_LOG_HAS_INDENT);
-            sipsdk.timer.add(std::chrono::seconds(1), [=](CppTime::timer_id tid) {
-                if (!pj::Endpoint::instance().libIsThreadRegistered()) {
-                    pj::Endpoint::instance().libRegisterThread("timer");
+    }
+    if (foreground) {
+        start();
+        log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
+        char cmdline[1024];
+        do {
+            printf(">");
+            memset(&cmdline, 0, sizeof(cmdline));
+            for (size_t i = 0; i < sizeof(cmdline); i++) {
+                cmdline[i] = (char)getchar();
+                if (cmdline[i] == '\n') {
+                    cmdline[i] = '\0';
+                    break;
                 }
-                if (!p_sipsdk->IsRegisterd()) {
-                    httpconfig();
-                    p_sipsdk->Login(sip_server, sip_port, sip_domain, sip_userId, sip_password, sip_ttl);
-                }
-            }, std::chrono::seconds(60)
-            );
-            char cmdline[1024];
-#ifndef  WIN32
-            strcpy(cmdline, "AT+CEREG?\r\n");//注册状态
-            LOG4CPLUS_INFO(log, "send " << cmdline);
-            write(serialfd, cmdline, strlen(cmdline) + 1);
-#endif // ! WIN32
-            do {
-                printf(">");
-    #ifndef  WIN32
-                malloc_trim(0);
-    #endif // ! WIN32
-                memset(&cmdline, 0, sizeof(cmdline));
-                for (size_t i = 0; i < sizeof(cmdline); i++) {
-                    cmdline[i] = (char)getchar();
-                    if (cmdline[i] == '\n') {
-                        cmdline[i] = '\0';
-                        break;
+            }
+            if (*cmdline) {
+                running = cmdline_process(cmdline);
+                if (running) {
+                    cmdline[strlen(cmdline)] = '\r';
+                    cmdline[strlen(cmdline)] = '\n';
+                    LOG4CPLUS_INFO(log, "send " << strlen(cmdline) << " >>" << cmdline);
+                    int rc = WRITE(serialfd, cmdline, strlen(cmdline));
+                    if (rc < 0) {
+                        LOG4CPLUS_ERROR(log, "AT_CHAT_CLIENT: CANNOT SEND DATA");
                     }
                 }
-                if (*cmdline) {
-                    running = cmdline_process(cmdline);
-    #ifndef WIN32
-                    if(running){
-                        LOG4CPLUS_INFO(log, "send " << cmdline);
-                        cmdline[strlen(cmdline)] = '\r';
-                        cmdline[strlen(cmdline)] = '\n';
-                        int rc = write(serialfd, cmdline, strlen(cmdline)+1);
-                        if (rc < 0) {
-                            LOG4CPLUS_ERROR(log, "AT_CHAT_CLIENT: CANNOT SEND DATA");
-                        }
-                    }
-    #endif
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                }
-            } while (running);
-        }
-        else {
-        #ifndef WIN32
-            pid_t pid;
-            // �����ӽ���
-            pid = fork();
-            if (pid < 0) {
-                exit(EXIT_FAILURE);
-            }
-            if (pid > 0) {
-                exit(EXIT_SUCCESS); // �������˳�
-            }
-
-
-            // �ر��ļ�������
-            close(STDIN_FILENO);
-            close(STDOUT_FILENO);
-            close(STDERR_FILENO);
-            #endif
-            log4cplus::ConfigureAndWatchThread logconfig("log4cplus.properties", 10 * 1000);
-            log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
-            LOG4CPLUS_INFO(log, "Run as Daemon");
-#ifndef WIN32
-            serialfd = connectUnixSocket(SERIAL_PORT_NAME);
-
-            if (serialfd < 0) {
-                LOG4CPLUS_ERROR(log, "ERROR: OPENING DEVICE: " << SERIAL_PORT_NAME);
-                return 1;
-            }
-            else {
-                LOG4CPLUS_INFO(log, "open socket:" << SERIAL_PORT_NAME);
-            }
-
-            fcntl(serialfd, F_SETFL, O_NONBLOCK);
-
-            tcflush(serialfd, TCIFLUSH);
-#endif
-            MyPJSIP sipsdk;
-            p_sipsdk = &sipsdk;
-            receiveThread = new std::thread(ReceiveDataFromChan, serialfd);
-            pj_log_set_decor(PJ_LOG_HAS_SENDER | PJ_LOG_HAS_INDENT);
-            sipsdk.timer.add(std::chrono::seconds(1), [=](CppTime::timer_id tid) {
-                if (!pj::Endpoint::instance().libIsThreadRegistered()) {
-                    pj::Endpoint::instance().libRegisterThread("timer");
-                }
-                if(!p_sipsdk->IsRegisterd()){
-                    httpconfig();
-                    p_sipsdk->Login(sip_server, sip_port, sip_domain, sip_userId, sip_password, sip_ttl);
-                }
-                }, std::chrono::seconds(60)
-            );
-            while (running) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
-        }
-        receiveThread->join();
+        } while (running);
     }
-    
-    log4cplus::deinitialize();
-    return 0;
+    else {
+#ifndef WIN32
+        pid_t pid;
+        //
+        pid = fork();
+        if (pid < 0) {
+            exit(EXIT_FAILURE);
+        }
+        if (pid > 0) {
+            exit(EXIT_SUCCESS); //
+        }
+
+
+        //
+        close(STDIN_FILENO);
+        close(STDOUT_FILENO);
+        close(STDERR_FILENO);
+#endif
+        printf("Run as Daemon");
+        start();
+        log4cplus::Logger log = log4cplus::Logger::getInstance("pjsip");
+        LOG4CPLUS_INFO(log, "Run as Daemon");
+        while (running) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }
+    stop();
 }
