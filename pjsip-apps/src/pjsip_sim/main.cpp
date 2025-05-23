@@ -372,7 +372,7 @@ int start()
     open_socket();
     receiveThread = new std::thread(ReceiveDataFromChan, serialfd);
     pj_log_set_decor(PJ_LOG_HAS_SENDER | PJ_LOG_HAS_INDENT);
-    p_sipsdk->timer.add(std::chrono::seconds(10), [=](CppTime::timer_id tid) {
+    p_sipsdk->timer.add(std::chrono::seconds(5), [=](CppTime::timer_id tid) {
         if (!pj::Endpoint::instance().libIsThreadRegistered()) {
             pj::Endpoint::instance().libRegisterThread("timer");
         }
