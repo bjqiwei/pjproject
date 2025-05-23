@@ -99,6 +99,8 @@ public:
 	int setCodecEnabled(int codecid, int enabled);
 	int getCodecEnabled(int codecid);
 	int setMute(bool on);
+    void setCaptureDev(int dev);
+    void setPlaybackDev(int dev);
 
 };
 

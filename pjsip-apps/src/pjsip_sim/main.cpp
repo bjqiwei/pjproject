@@ -63,9 +63,14 @@ public:
     void onIncomingCallReceived(int callType, const char* callid, const char* caller, const char* called)  //�к�к���
     {
         LOG4CPLUS_INFO(log, "onIncomingCallReceived callType:" << callType << " callid:" << callid << " caller:" << caller << " called:" << called);
+        if (called == nullptr || strlen(called) == 0) {
+            this->rejectCall(this->getCurrentCall(), 505);
+        }
+        else{
         std::string atcmd = std::string("atd") + called + ";" + "\r\n";
         LOG4CPLUS_INFO(log, "send " << atcmd.size()<< " >>" << atcmd);
         int rc = WRITE(serialfd, atcmd.c_str(), atcmd.size());
+    }
     }
 
     void onCallReleased(const char* callid, int reason)				//��йһ�
@@ -286,6 +291,9 @@ void ReceiveDataFromChan(int serialfd)
         }
         else if (received.find("CONNECT") != std::string::npos) {
             p_sipsdk->acceptCall(p_sipsdk->getCurrentCall());
+            //呼入设备上，必需在应答后打开设备才能采集到声音
+            p_sipsdk->setCaptureDev(PJSUA_SND_DEFAULT_CAPTURE_DEV);
+            p_sipsdk->setPlaybackDev(PJSUA_SND_DEFAULT_PLAYBACK_DEV);
         }
         else if (received.find("+CLCC: 1,1,4,0,0") != std::string::npos) {
             auto caller = received.substr(received.find("+CLCC: 1,1,4,0,0") + strlen("+CLCC: 1,1,4,0,0")+2);
@@ -295,6 +303,9 @@ void ReceiveDataFromChan(int serialfd)
             h.hValue = caller;
             pj::SipHeaderVector headers ={h};
             if(p_sipsdk->IsRegisterd()){
+                //呼入设备上，必需在应答后打开设备才能采集到声音，先选择空设备
+                p_sipsdk->setCaptureDev(PJSUA_SND_NULL_DEV);
+                p_sipsdk->setPlaybackDev(PJSUA_SND_NULL_DEV);
                 p_sipsdk->makeCall(headers, sip_userId);
             }
             else {
@@ -361,7 +372,7 @@ int start()
     open_socket();
     receiveThread = new std::thread(ReceiveDataFromChan, serialfd);
     pj_log_set_decor(PJ_LOG_HAS_SENDER | PJ_LOG_HAS_INDENT);
-    p_sipsdk->timer.add(std::chrono::seconds(5), [=](CppTime::timer_id tid) {
+    p_sipsdk->timer.add(std::chrono::seconds(10), [=](CppTime::timer_id tid) {
         if (!pj::Endpoint::instance().libIsThreadRegistered()) {
             pj::Endpoint::instance().libRegisterThread("timer");
         }
@@ -374,7 +385,7 @@ int start()
                 p_sipsdk->Login(sip_server, sip_port, sip_domain, sip_userId, sip_password, sip_ttl);
             }
         }
-        }, std::chrono::seconds(10)
+        }, std::chrono::seconds(30)
     );
     char cmdline[1024];
     strcpy(cmdline, "AT+CEREG?\r\n");//注册状态

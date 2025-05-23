@@ -243,8 +243,11 @@ void CPjSipSDK::onIncomingCall(pj::Call * call, const std::string& wholeMsg)
     /*std::string local = call->getInfo().localUri;
     std::string called = local.substr(local.find(":") + 1, local.find("@") - (local.find(":") - 1));*/
     std::string hName = "X-Real-Called-Number:";
-    std::string called = wholeMsg.substr(wholeMsg.find(hName) + hName.size() + 1);
-    called = called.substr(0, called.find("\r\n"));
+    std::string called;
+    if(wholeMsg.find(hName) != std::string::npos){
+        called = wholeMsg.substr(wholeMsg.find(hName) + hName.size() + 1);
+        called = called.substr(0, called.find("\r\n"));
+    }
     helper::string::trim(called);
 	//startRinging();
 	this->onIncomingCallReceived(0, std::to_string(call->getInfo().id).c_str(), caller.c_str(), called.c_str());
@@ -891,6 +894,16 @@ int CPjSipSDK::setMute(bool on)
 
 	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " result:" << status);
 	return 0;
+}
+
+void CPjSipSDK::setCaptureDev(int dev)
+{
+    return pj::Endpoint::instance().audDevManager().setCaptureDev(dev);
+}
+
+void CPjSipSDK::setPlaybackDev(int dev)
+{
+    return pj::Endpoint::instance().audDevManager().setPlaybackDev(dev);
 }
 
 std::string CPjSipSDK::getCodecs(int type)
