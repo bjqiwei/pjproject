@@ -29,7 +29,7 @@
 #include "stringHelper.h"
 #include <jsoncpp-1.9.5/include/json/json.h>
 
-#define VERSION "1.0.0.0"
+#define VERSION "1.1.0.0"
 
 #ifndef WIN32
 #define WRITE(fd, buf, len) write(fd, buf, len)
