@@ -772,29 +772,22 @@ int CPjSipSDK::releaseCall(int callid) {
 	pj_status_t status = PJ_SUCCESS;
 	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " callid:" << callid);
 
-	if (callid < 0 && this->m_acc != nullptr){
-		this->m_acc->m_callsmtx.lock();
-		for (auto & call : this->m_acc->m_calls)
-		{
-			delete call.second;
-		}
-		this->m_acc->m_calls.clear();
-		this->m_acc->m_callsmtx.unlock();
+	if (callid < 0){
+        pj::Endpoint::instance().hangupAllCalls();
 	}
 	else {
-		pj::Call * call = pj::Call::lookup(callid);
-
-		try {
-			if (call) {
-				call->hangup(true);
-			}
-			else
-				status = PJ_EINVAL;
-		}
-		catch (pj::Error &err) {
-			LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
-			status = err.status;
-		}
+		    pj::Call * call = pj::Call::lookup(callid);
+		    try {
+			    if (call) {
+				    call->hangup(true);
+			    }
+			    else
+				    status = PJ_EINVAL;
+		    }
+		    catch (pj::Error &err) {
+			    LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
+			    status = err.status;
+        }
 	}
 
 	LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " result:" << status);
