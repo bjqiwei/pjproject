@@ -28,6 +28,7 @@
 #include "httpclient.h"
 #include "stringHelper.h"
 #include <jsoncpp-1.9.5/include/json/json.h>
+#include "utfconvert.h"
 
 #define VERSION "1.1.0.0"
 
@@ -295,8 +296,8 @@ void ReceiveDataFromChan(int serialfd)
             p_sipsdk->setCaptureDev(PJSUA_SND_DEFAULT_CAPTURE_DEV);
             p_sipsdk->setPlaybackDev(PJSUA_SND_DEFAULT_PLAYBACK_DEV);
         }
-        else if (received.find("+CLCC: 1,1,4,0,0") != std::string::npos) {
-            auto caller = received.substr(received.find("+CLCC: 1,1,4,0,0") + strlen("+CLCC: 1,1,4,0,0")+2);
+        else if (received.find("+CLCC: 1,1,4,0,0\"") != std::string::npos) {
+            auto caller = received.substr(received.find("+CLCC: 1,1,4,0,0\"") + strlen("+CLCC: 1,1,4,0,0\""));
             caller = caller.substr(0, caller.find("\""));
             pj::SipHeader h;
             h.hName ="X-Real-Caller-Number";
@@ -319,6 +320,28 @@ void ReceiveDataFromChan(int serialfd)
             deviceId = deviceId.substr(0, 16);//16位
             mac_id = deviceId;
             LOG4CPLUS_INFO(log, "deviceId " << mac_id);
+        }
+        else if (received.find("+CMT: \"") != std::string::npos) {
+            auto caller = received.substr(received.find("+CMT: \"") + strlen("+CMT: \""));
+            caller = caller.substr(0, caller.find("\""));
+            pj::SipHeader h;
+            h.hName = "X-Real-Caller-Number";
+            h.hValue = ucs2_to_utf8(caller);
+            pj::SipHeaderVector headers = { h };
+            
+            auto pos = received.find("GMT+8\"");
+            if(pos != std::string::npos){
+                std::string ucs2Text = received.substr(pos + strlen("GMT+8\""));
+                helper::string::trim(ucs2Text);
+                LOG4CPLUS_INFO(log, "GMT " << ucs2Text);
+                auto utf8Text = ucs2_to_utf8(ucs2Text);
+                LOG4CPLUS_INFO(log, "GMT UTF8 text " << utf8Text);
+                p_sipsdk->sendIM(headers, utf8Text);
+            }
+            else{
+                LOG4CPLUS_WARN(log, "GMT not find  GMT+8\"");
+            }
+
         }
     }
     LOG4CPLUS_INFO(log, "ReceiveDataFromChan end");
@@ -396,10 +419,23 @@ int start()
     LOG4CPLUS_INFO(log, "send " << strlen(cmdline) << " >>" << cmdline);
     WRITE(serialfd, cmdline, strlen(cmdline));
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     std::string atcmd = "AT+CSIM=10,\"0001028208\"\r\n";//获取设备ID
     LOG4CPLUS_INFO(log, "send " << atcmd.size() << " >>" << atcmd);
     WRITE(serialfd, atcmd.c_str(), atcmd.size());
+
+
+    //短信配置
+    atcmd = "AT+CMGF=1\r\n";//
+    LOG4CPLUS_INFO(log, "send " << atcmd.size() << " >>" << atcmd);
+    WRITE(serialfd, atcmd.c_str(), atcmd.size());
+    atcmd = "AT+CSCS=\"UCS2\" \r\n";
+    LOG4CPLUS_INFO(log, "send " << atcmd.size() << " >>" << atcmd);
+    WRITE(serialfd, atcmd.c_str(), atcmd.size());
+    atcmd = "AT+CNMI=1,2,2,1,1\r\n";
+    LOG4CPLUS_INFO(log, "send " << atcmd.size() << " >>" << atcmd);
+    WRITE(serialfd, atcmd.c_str(), atcmd.size());
+
     return 0;
 }
 

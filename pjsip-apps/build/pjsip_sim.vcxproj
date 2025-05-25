@@ -791,12 +791,14 @@ xcopy /Y ..\src\pjsip_sim\pjsip.xml $(OutDir)</Command>
     <ClInclude Include="..\src\pjsip_sim\httpclient.h" />
     <ClInclude Include="..\src\pjsip_sim\PjSipSDK.h" />
     <ClInclude Include="..\src\pjsip_sim\tinyxml2.h" />
+    <ClInclude Include="..\src\pjsip_sim\utfconvert.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\pjsip_sim\httpclient.cpp" />
     <ClCompile Include="..\src\pjsip_sim\main.cpp" />
     <ClCompile Include="..\src\pjsip_sim\PjSipSDK.cpp" />
     <ClCompile Include="..\src\pjsip_sim\tinyxml2.cpp" />
+    <ClCompile Include="..\src\pjsip_sim\utfconvert.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

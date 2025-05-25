@@ -179,8 +179,8 @@ void CPjSipSDK::onRegState(pj::OnRegStateParam &prm)
 {
 	if (prm.code == 200) {
 		if (!this->m_Registerd) {
+            this->m_Registerd = true;
 			this->onRegistered(prm);
-			this->m_Registerd = true;
 		}
 	}
 	else {
@@ -553,6 +553,10 @@ int CPjSipSDK::Login(std::string server, long port, std::string domain, std::str
         m_acc = new CAccount(this);
         try {
             m_acc->create(acc_cfg);
+            pj::BuddyConfig cfg;
+            cfg.uri = "sip:" + this->m_voipid + "@" + this->m_domain;
+            cfg.subscribe = false;
+            m_buddy.create(*m_acc, cfg);
         }
         catch (pj::Error& err) {
             LOG4CPLUS_ERROR(log, "Account creation error: " << err.info());
@@ -600,22 +604,30 @@ std::string CPjSipSDK::makeCall(const pj::SipHeaderVector headers, std::string s
 	return std::to_string(m_callid);
 }
 
-int CPjSipSDK::sendIM(const std::string& content)
+int CPjSipSDK::sendIM(const pj::SipHeaderVector headers, const std::string& utf8Text)
 {
 
-    LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " content:" << content);
-
-
+    LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " content:" << utf8Text);
     pj::Call* call = nullptr;
     try {
-        m_acc->sendIM(content, &call);
+
+
+        if(this->IsRegisterd()){
+            pj::SendInstantMessageParam imParam;
+            imParam.content = utf8Text;
+            imParam.txOption.headers =headers;
+            m_buddy.sendInstantMessage(imParam);
+        }
+        else {
+            LOG4CPLUS_ERROR(log, this->getHost() << " No Registerd, sendIM " << utf8Text);
+        }
     }
     catch (pj::Error& err) {
         LOG4CPLUS_ERROR(log, this->getHost() << " " << err.info() << ":" << err.reason << ";" << err.srcFile << ":" << err.srcLine);
         return 0;
     }
 
-    LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__ << " callid:" << m_callid);
+    LOG4CPLUS_DEBUG(log, this->getHost() << " " << __FUNCTION__);
     return m_callid;
 }
 
@@ -998,11 +1010,13 @@ void CAccount::makeCall(const pj::SipHeaderVector headers, const std::string & s
 	return;
 }
 
-void CAccount::sendIM(const std::string& content, pj::Call** pcall)
+CBuddy::CBuddy()
 {
-    pj::Call* call = new CPCall(this);
-    pj::SendInstantMessageParam imParam;
-    imParam.content = content;
-    call->sendInstantMessage(imParam);
-    return;
+    this->log = log4cplus::Logger::getInstance("MyBuddy");
+}
+
+void CBuddy::onBuddyState()
+{
+    pj::BuddyInfo bi = getInfo();
+    LOG4CPLUS_ERROR(log, "Buddy " << bi.uri << " is " << bi.presStatus.statusText);
 }

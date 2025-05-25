@@ -17,7 +17,6 @@ public:
 	virtual void onIncomingCall(pj::OnIncomingCallParam &prm) override;
 
 	void makeCall(const pj::SipHeaderVector headers, const std::string & strCalled, pj::Call ** call);
-    void sendIM(const std::string& content, pj::Call** call);
 private:
 	log4cplus::Logger log;
 	class CPjSipSDK * m_Plugin = nullptr;
@@ -25,6 +24,17 @@ private:
 	std::map<pjsua_call_id, pj::Call *>m_calls;
 	friend class CPCall;
 	friend class CPjSipSDK;
+};
+
+class CBuddy : public pj::Buddy
+{
+public:
+    CBuddy();
+    ~CBuddy() {}
+
+    virtual void onBuddyState();
+private:
+    log4cplus::Logger log;
 };
 
 class CPjSipSDK
@@ -73,6 +83,8 @@ private:
 
 public:
 	CAccount * m_acc = nullptr;
+    CBuddy  m_buddy;
+
 public:
     CPjSipSDK();
 	~CPjSipSDK();
@@ -86,7 +98,7 @@ public:
 	void stopRinging();
 	int Login(std::string server, long port, std::string domain, std::string utf8voipId, std::string utf8voipPwd, int ttl);
 	std::string makeCall(const pj::SipHeaderVector headers, std::string strCalled);
-    int sendIM(const std::string& content);
+    int sendIM(const pj::SipHeaderVector headers, const std::string& utf8Text);
 	int acceptCall(int callid);
 	int rejectCall(int callid, int reason);
 	int pauseCall(int callid);

@@ -79,20 +79,24 @@ namespace helper
 		//transition a string to upper
 		static inline std::string & toUpper(std::string & str)
 		{
-			transform(str.begin(), str.end(), str.begin(), ::toupper);
+            std::transform(str.begin(), str.end(), str.begin(),
+                [](unsigned char c) { return (char )std::toupper(c); });
 			return str;
 		}
 
 		static inline std::wstring& toUpper(std::wstring& str)
 		{
 			transform(str.begin(), str.end(), str.begin(), ::towupper);
+            std::transform(str.begin(), str.end(), str.begin(),
+                [](wchar_t c) { return ::towupper(c); });
 			return str;
 		}
 
 		//transition a string to lower
 		static inline std::string & toLower(std::string &str)
 		{
-			transform(str.begin(), str.end(), str.begin(), ::tolower);
+            std::transform(str.begin(), str.end(), str.begin(),
+                [](unsigned char c) { return (char)std::tolower(c); });
 			return str;
 		}
 
