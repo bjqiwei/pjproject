@@ -17,3 +17,5 @@ std::u16string utf8_to_utf16le(const std::string& u8str, bool addbom = false, bo
 std::u16string utf8_to_utf16be(const std::string& u8str, bool addbom = false, bool* ok = NULL);
 
 std::string ucs2_to_utf8(const std::string& ucs2);
+
+std::string utf8_to_ucs2(const std::string&u8str);

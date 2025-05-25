@@ -1,6 +1,7 @@
 ﻿#include<iostream>
 #include <string>
 #include <sstream>
+#include <iomanip>
 #include "utfconvert.h"
 #include <log4cplus/log4cplus.h>
 
@@ -289,5 +290,21 @@ std::string ucs2_to_utf8(const std::string& ucs2)
 
     std::string utf8Text = utf16le_to_utf8(utf16);
     return utf8Text;
+}
+
+std::string utf8_to_ucs2(const std::string& u8str)
+{
+    auto u16str = utf8_to_utf16le(u8str);
+    std::string ucs2;
+    std::ostringstream oss;
+    for (uint16_t u16c : u16str) {
+        int c1 = (u16c & 0xFF00)>> 4;
+        int c2 = (u16c & 0x00FF);
+        oss << std::hex << std::uppercase << std::setfill('0') << std::setw(2) << c1;
+        oss << std::hex << std::uppercase << std::setfill('0') << std::setw(2) << c2;
+        
+    }
+    ucs2 = oss.str();
+    return ucs2;
 }
 

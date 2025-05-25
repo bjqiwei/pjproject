@@ -61,7 +61,7 @@ public:
 
         LOG4CPLUS_INFO(log, prm.rdata.srcAddress << " " << "onRegistered ");
     }
-    void onIncomingCallReceived(int callType, const char* callid, const char* caller, const char* called)  //�к�к���
+    void onIncomingCallReceived(int callType, const char* callid, const char* caller, const char* called)
     {
         LOG4CPLUS_INFO(log, "onIncomingCallReceived callType:" << callType << " callid:" << callid << " caller:" << caller << " called:" << called);
         if (called == nullptr || strlen(called) == 0) {
@@ -73,8 +73,23 @@ public:
         int rc = WRITE(serialfd, atcmd.c_str(), atcmd.size());
     }
     }
+    void onInstantMessage(const char* caller, const char* called, const char* text)
+    {
+        LOG4CPLUS_INFO(log, "onInstantMessage " << "caller:" << caller << " called : " << called << " text:" << text);
 
-    void onCallReleased(const char* callid, int reason)				//��йһ�
+        std::string atcmd = std::string("AT+CMGS=\"") + called + "\"" + "\r\n";
+        LOG4CPLUS_INFO(log, "send " << atcmd.size() << " >>" << atcmd);
+        int rc = WRITE(serialfd, atcmd.c_str(), atcmd.size());
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+        atcmd =  utf8_to_ucs2(text);
+        atcmd.push_back(0x1A);
+        LOG4CPLUS_INFO(log, "send " << atcmd.size() << " >>" << atcmd);
+        rc = WRITE(serialfd, atcmd.c_str(), atcmd.size());
+
+    }
+
+    void onCallReleased(const char* callid, int reason)
     {
         LOG4CPLUS_INFO(log, "onCallReleased " << callid);
         std::string atcmd = std::string("ATH") + "\r\n";

@@ -253,6 +253,28 @@ void CPjSipSDK::onIncomingCall(pj::Call * call, const std::string& wholeMsg)
 	this->onIncomingCallReceived(0, std::to_string(call->getInfo().id).c_str(), caller.c_str(), called.c_str());
 }
 
+void CPjSipSDK::onInstantMessage(pj::OnInstantMessageParam& prm)
+{
+    std::string remote = prm.fromUri;
+    std::string caller = remote.substr(remote.find(":") + 1, remote.find("@") - (remote.find(":") + 1));
+    /*std::string local = call->getInfo().localUri;
+    std::string called = local.substr(local.find(":") + 1, local.find("@") - (local.find(":") - 1));*/
+    std::string hName = "X-Real-Caller-Number:";
+    std::string called;
+    if (prm.rdata.wholeMsg.find(hName) != std::string::npos) {
+        called = prm.rdata.wholeMsg.substr(prm.rdata.wholeMsg.find(hName) + hName.size() + 1);
+        called = called.substr(0, called.find("\r\n"));
+    }
+    hName = "X-Real-Called-Number:";
+    if (prm.rdata.wholeMsg.find(hName) != std::string::npos) {
+        called = prm.rdata.wholeMsg.substr(prm.rdata.wholeMsg.find(hName) + hName.size() + 1);
+        called = called.substr(0, called.find("\r\n"));
+    }
+    helper::string::trim(called);
+    LOG4CPLUS_INFO(log, prm.rdata.srcAddress << " " << "onInstantMessage called " << called << " text "  << prm.msgBody);
+    this->onInstantMessage(caller.c_str(), called.c_str(), prm.msgBody.c_str());
+}
+
 void CPjSipSDK::onRegistered(pj::OnRegStateParam& prm)
 {
     LOG4CPLUS_INFO(log, prm.rdata.srcAddress << " " << "onRegistered ");
@@ -266,6 +288,10 @@ void CPjSipSDK::onRegisterError(int reason, const char* desc)
 void CPjSipSDK::onIncomingCallReceived(int callType, const char* callid, const char* caller, const char * called)
 {
     LOG4CPLUS_INFO(log, callType << " " << callid << " " << caller << ">>" << called);
+}
+
+void CPjSipSDK::onInstantMessage(const char* caller, const char* called, const char* text)
+{
 }
 
 void CPjSipSDK::onCallProceeding(const char* callied)
@@ -995,6 +1021,11 @@ void CAccount::onIncomingCall(pj::OnIncomingCallParam & prm)
 	//cprm.statusCode = PJSIP_SC_RINGING;
 	//call->answer(cprm);
 	m_Plugin->onIncomingCall(call, prm.rdata.wholeMsg);
+}
+
+void CAccount::onInstantMessage(pj::OnInstantMessageParam& prm)
+{
+    m_Plugin->onInstantMessage(prm);
 }
 
 void CAccount::makeCall(const pj::SipHeaderVector headers, const std::string & strCalled, pj::Call ** pcall)

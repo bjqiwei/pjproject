@@ -15,6 +15,7 @@ public:
 	virtual void onCallState(const pj::CallInfo & ci);//通话状态改变回调
 	virtual void onDtmfDigit(pjsua_call_id call_id, const std::string & dtmf);
 	virtual void onIncomingCall(pj::OnIncomingCallParam &prm) override;
+    virtual void onInstantMessage(pj::OnInstantMessageParam& prm);
 
 	void makeCall(const pj::SipHeaderVector headers, const std::string & strCalled, pj::Call ** call);
 private:
@@ -45,6 +46,7 @@ public:
 	virtual void onCallState(const pj::CallInfo & ci);//通话状态改变回调
 	virtual void onDtmfDigit(pjsua_call_id call_id, const std::string & dtmf);
 	virtual void onIncomingCall(pj::Call *call, const std::string& wholeMsg);
+    virtual void onInstantMessage(pj::OnInstantMessageParam& prm);
 
     bool IsRegisterd(){ return m_Registerd;}
 
@@ -52,6 +54,7 @@ private:// 虚函数
 	virtual void onRegistered(pj::OnRegStateParam& prm);					//与云通讯平台连接成功
 	virtual void onRegisterError(int reason, const char * desc);		//与云通讯平台连接断开或者出错
 	virtual void onIncomingCallReceived(int callType, const char *callid, const char *caller, const char * called);  //有呼叫呼入
+    virtual void onInstantMessage(const char* caller, const char* called, const char * text);
 	virtual void onCallProceeding(const char*callied);		//呼叫已经被云通讯平台处理
 	virtual void onCallAlerting(const char *callid);			//呼叫振铃
 	virtual void onCallAnswered(const char *callid);			//外呼对方应答
