@@ -82,8 +82,8 @@ public:
         int rc = WRITE(serialfd, atcmd.c_str(), atcmd.size());
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-        atcmd =  utf8_to_ucs2(text);
-        atcmd.push_back(0x1A);
+        atcmd = std::string("\"") + utf8_to_ucs2(text) + std::string("\" + 0x1A");
+        //atcmd.push_back(0x1A);
         LOG4CPLUS_INFO(log, "send " << atcmd.size() << " >>" << atcmd);
         rc = WRITE(serialfd, atcmd.c_str(), atcmd.size());
 
