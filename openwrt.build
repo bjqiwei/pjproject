@@ -5,7 +5,20 @@ cd ..
 mkdir -p jsoncpp-1.9.5-build && cd jsoncpp-1.9.5-build
 cmake ../jsoncpp-1.9.5 -DCMAKE_CXX_FLAGS="-fPIC -pipe -march=armv7-a" -DBUILD_SHARED_LIBS=false -DJSONCPP_WITH_TESTS=false -DJSONCPP_WITH_POST_BUILD_UNITTEST=false -DCMAKE_VERBOSE_MAKEFILE=ON&& make
 
+cd ..
+tar -zxvf tiff-4.7.0.tar.gz && cd tiff-4.7.0
+./autogen.sh && ./configure --host=x86_64-linux --target=armv7 --prefix="$CROSSTOOL_PATH/sysroots/target-arm/usr/local" --disable-shared --with-pic && make install
+
+cd ..
+tar zxvf libjpeg-turbo-3.1.0.tar.gz && cd libjpeg-turbo-3.1.0
+cmake . -DCMAKE_C_FLAGS="-pipe -march=armv7-a" -DCMAKE_INSTALL_PREFIX="$CROSSTOOL_PATH/sysroots/target-arm/usr/local" -DWITH_SIMD=OFF -DENABLE_SHARED=OFF && make install
+
+cd ..
+unzip spandsp-master.zip && cd spandsp-master
+./bootstrap.sh && ./configure --host=x86_64-linux --target=armv7 --prefix="$CROSSTOOL_PATH/sysroots/target-arm/usr/local" --disable-shared --with-pic CFLAGS="-I$CROSSTOOL_PATH/sysroots/target-arm/usr/include" LDFLAGS="-L$CROSSTOOL_PATH/sysroots/target-arm/usr/lib"
+make install
+
 cd ../..
 
 
-./configure --host=x86_64-linux --target=armv7 -with-ssl="$CROSSTOOL_PATH/sysroots/target-arm/usr" LD=arm-openwrt-linux-uclibcgnueabi-gcc LDFLAGS="-L$CROSSTOOL_PATH/sysroots/target-arm/usr/lib -lprop2uci -laudio-apu -lcutils -lacm -llog -luci -lubox -lrilutil -lubus -ltinyalsa" && make clean && make
+./configure --host=x86_64-linux --target=armv7 -with-ssl="$CROSSTOOL_PATH/sysroots/target-arm/usr" LD=arm-openwrt-linux-uclibcgnueabi-gcc LDFLAGS="-L$CROSSTOOL_PATH/sysroots/target-arm/usr/lib -lprop2uci -laudio-apu -lcutils -lacm -llog -luci -lubox -lrilutil -lubus -ltinyalsa" && make
